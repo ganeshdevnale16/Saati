@@ -21,6 +21,7 @@ body{font-family:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
 button,input,select{font:inherit;color:inherit}
 a{color:var(--teal)}
 .hidden,[hidden]{display:none!important}
+html.in-app .web-only{display:none!important}
 :focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
 svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -206,7 +207,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
       <img src="/logo-96.png" alt="" width="64" height="64" style="border-radius:16px;box-shadow:0 0 0 3px rgba(255,255,255,.35);margin-bottom:18px;display:block" onerror="this.remove()">
       <h1>Saathi</h1>
       <p>Share where you are with people you trust. Ask for help with one hold.</p>
-      <a class="getapp" href="/download">Download the app</a>
+      <a class="getapp web-only" href="/download">Download the app</a>
     </div>
     <div style="font-size:13px;opacity:.85;position:relative">Developed by Devnale Globals</div>
     <div class="rings" aria-hidden="true"></div>
@@ -278,7 +279,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
       <a href="#/requests" data-nav="requests"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Requests<span class="badge hidden" id="bReq"></span></a>
       <a href="#/alerts" data-nav="alerts"><svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg>Alerts<span class="badge hidden" id="bAlerts"></span></a>
       <a href="#/profile" data-nav="profile"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Profile & settings</a>
-      <a href="/download"><svg class="i" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Get the app</a>
+      <a href="/download" class="web-only"><svg class="i" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Get the app</a>
     </nav>
     <div class="spacer"></div>
     <button class="sos" data-sos aria-label="Hold for 3 seconds to send SOS"><span class="fill"></span><span class="lbl"><b>SOS</b><span>Hold 3 seconds</span></span></button>
@@ -302,6 +303,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
       <div class="page" data-page="overview">
         <div class="hello"><h1 id="helloName"></h1><p id="helloDate"></p></div>
         <div id="sosBanners"></div>
+        <div id="appUpdate"></div>
         <div id="pushPrompt"></div>
         <div class="stats">
           <a class="stat" href="#/share"><span>Can see you</span><b id="sSharing">0</b></a>
@@ -318,7 +320,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
           <div class="stack">
             <div class="card" id="mySosCard" hidden></div>
             <div class="card"><h3>Emergency contact</h3><p class="sub" id="emContact"></p><a class="btn ghost sm" href="#/profile">Edit</a></div>
-            <div class="card"><h3>Get the mobile app</h3><p class="sub">The app keeps sharing when your phone is locked and works without internet.</p><a class="btn sm" href="/download">Download</a></div>
+            <div class="card web-only"><h3>Get the mobile app</h3><p class="sub">The app keeps sharing when your phone is locked and works without internet.</p><a class="btn sm" href="/download">Download</a></div>
           </div>
         </div>
       </div>
@@ -336,7 +338,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
             <div class="field"><label for="sNote">Message (optional)</label><input id="sNote" maxlength="140" placeholder="On my way home"></div>
             <button class="btn block" id="sGo">Start sharing</button>
             <div id="webShareStatus" class="msg info hidden" style="margin:14px 0 0"></div>
-            <p class="muted" style="margin:12px 0 0">From the website, sharing works while this tab is open. Use the app to keep sharing when the phone is locked.</p>
+            <p class="muted web-only" style="margin:12px 0 0">From the website, sharing works while this tab is open. Use the app to keep sharing when the phone is locked.</p>
           </div>
           <div class="stack">
             <div class="card"><h3>Who can see me</h3><div id="sharingList"></div></div>
@@ -463,6 +465,11 @@ const $$ = (s) => document.querySelectorAll(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const DUR = [['1h', '1 hour'], ['1d', '1 day'], ['1w', '1 week'], ['1m', '1 month'], ['custom', 'Custom'], ['until_cancel', 'Until I stop']];
 const durLabel = (d, m) => d === 'custom' && m ? (m >= 60 ? Math.round(m / 60) + ' hours' : m + ' minutes') : (DUR.find((x) => x[0] === d) || [, d])[1];
+/* ---------- running inside the Saathi Android app? ---------- */
+const APP = window.SAATHI_APP || null;
+const toNative = (m) => { try { window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m)); } catch {} };
+if (APP) document.documentElement.classList.add('in-app');
+window.onNativeStatus = (st) => { S.native = st; updateShareStatus(); };
 const S = { token: null, user: null, shares: { sharing: [], tracking: [], incoming: [], outgoing: [] }, people: [], sos: { mine: null, others: [] }, notes: [], selected: null, markers: {}, layers: [], watchId: null, socket: null, me: null, seenSos: new Set() };
 try { S.token = localStorage.getItem('saathi_token'); S.user = JSON.parse(localStorage.getItem('saathi_user') || 'null'); } catch {}
 
@@ -479,7 +486,7 @@ async function api(path, opts = {}) {
   if (!r.ok) throw new Error(d.error || 'Something went wrong. Try again.');
   return d;
 }
-function saveUser(u, token) { S.user = u; if (token) S.token = token; try { localStorage.setItem('saathi_user', JSON.stringify(u)); if (token) localStorage.setItem('saathi_token', token); } catch {} paintUser(); }
+function saveUser(u, token) { S.user = u; if (token) { S.token = token; toNative({ type: 'auth', token, user: u }); } try { localStorage.setItem('saathi_user', JSON.stringify(u)); if (token) localStorage.setItem('saathi_token', token); } catch {} paintUser(); }
 
 /* ======================= AUTH ======================= */
 function showAuth(mode) {
@@ -519,7 +526,7 @@ $('#regForm').onsubmit = async (e) => {
 $('#xSend').onclick = async () => { try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#xMobile').value, purpose: 'reset' } }); $('#xRest').classList.remove('hidden'); if (r.devCode) { $('#xOtp').value = r.devCode; authInfo('Test mode: code ' + r.devCode + ' is filled in.'); } else authInfo('We sent a code to your mobile.'); } catch (x) { authErr(x); } };
 $('#resetForm').onsubmit = async (e) => { e.preventDefault(); try { await api('/auth/reset', { method: 'POST', body: { mobile: $('#xMobile').value, otp: $('#xOtp').value, password: $('#xPw').value } }); showAuth('login'); authInfo('Password updated. Sign in with your new password.'); } catch (x) { authErr(x); } };
 
-function logout() { stopWebShare(); try { localStorage.removeItem('saathi_token'); localStorage.removeItem('saathi_user'); } catch {} S.token = null; S.user = null; S.socket?.disconnect(); location.hash = ''; location.reload(); }
+function logout() { toNative({ type: 'logout' }); stopWebShare(); try { localStorage.removeItem('saathi_token'); localStorage.removeItem('saathi_user'); } catch {} S.token = null; S.user = null; S.socket?.disconnect(); location.hash = ''; location.reload(); }
 $('#logout').onclick = logout;
 
 /* ======================= ROUTER ======================= */
@@ -778,7 +785,7 @@ $('#delBtn').onclick = async () => {
 };
 
 /* ======================= NOTIFICATIONS (web push) ======================= */
-const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const pushSupported = () => !APP && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 let swReg = null;
 async function registerSW() { if (!pushSupported()) return null; try { swReg = await navigator.serviceWorker.register('/sw.js'); return swReg; } catch { return null; } }
 const b64ToUint8 = (b) => { const p = '='.repeat((4 - b.length % 4) % 4); const raw = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...raw].map((c) => c.charCodeAt(0))); };
@@ -803,6 +810,7 @@ function renderPushPrompt() {
   $('#pushPrompt').innerHTML = show ? `<div class="prompt"><svg class="i" viewBox="0 0 24 24" style="color:var(--amber);width:26px;height:26px"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg><div class="grow"><b>Turn on alerts</b><span class="muted">Get SOS and nearby alerts on this computer, even when Saathi is closed.</span></div><button class="btn sm" onclick="enablePush()">Turn on</button><button class="link" onclick="try{localStorage.setItem('saathi_push_dismissed','1')}catch{};renderPushPrompt()">Later</button></div>` : '';
 }
 function paintPushState() {
+  if (APP) { $('#pushState').textContent = 'Alerts arrive as phone notifications. Allow notifications for Saathi in your phone settings.'; $('#pushOn').classList.add('hidden'); return; }
   if (!pushSupported()) { $('#pushState').textContent = 'This browser does not support alerts. Use the Saathi app.'; $('#pushOn').disabled = true; return; }
   const p = Notification.permission;
   $('#pushState').textContent = p === 'granted' ? 'Alerts are on. SOS alerts stay on screen until you open them.' : p === 'denied' ? 'Alerts are blocked in this browser. Click the lock icon in the address bar → Notifications → Allow, then reload.' : 'Alerts are off. Turn them on to get SOS alerts even when this tab is closed.';
@@ -823,12 +831,13 @@ function playAlarm() {
   } catch {}
 }
 function showSosModal(e) {
+  toNative({ type: 'sosAlert' });
   $('#sosModal').innerHTML = `<div class="sosmodal"><h2 id="sosTitle">${esc(e.full_name)} needs help</h2><p>SOS sent ${ago(e.created_at)}.${e.message ? ' “' + esc(e.message) + '”' : ''}</p>
     <div class="btns"><a class="btn" href="tel:${esc(e.mobile)}">Call ${esc(e.mobile)}</a><a class="btn" href="#/track/${e.user_id}" onclick="closeSos()">See location</a><button class="btn ghost" onclick="closeSos()">Dismiss</button></div></div>`;
   $('#sosModal').classList.remove('hidden'); playAlarm();
   if (document.hidden && 'Notification' in window && Notification.permission === 'granted' && !swReg) new Notification('SOS from ' + e.full_name, { body: 'Tap to see their location', requireInteraction: true });
 }
-window.closeSos = () => { $('#sosModal').classList.add('hidden'); alarm?.stop(); alarm = null; };
+window.closeSos = () => { $('#sosModal').classList.add('hidden'); alarm?.stop(); alarm = null; toNative({ type: 'stopAlarm' }); };
 
 /* ---------- SOS: send (hold 3 s) ---------- */
 $$('[data-sos]').forEach((b) => {
@@ -842,6 +851,7 @@ $$('[data-sos]').forEach((b) => {
   b.addEventListener('click', () => { if (!sent) toast('Press and hold for 3 seconds to send SOS'); });
 });
 async function sendSos(fill) {
+  toNative({ type: 'haptic' });
   const pos = await new Promise((res) => navigator.geolocation ? navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res({}), { timeout: 6000 }) : res({}));
   try {
     const r = await api('/sos', { method: 'POST', body: { ...pos, message: 'I need help.' } });
@@ -862,6 +872,7 @@ async function flushQ() {
 }
 window.addEventListener('online', flushQ);
 function startWebShare() {
+  if (APP) { toNative({ type: 'startSharing' }); return; }
   if (S.watchId != null || !navigator.geolocation) return;
   S.watchId = navigator.geolocation.watchPosition((pos) => {
     S.me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -872,9 +883,16 @@ function startWebShare() {
   updateShareStatus();
 }
 function stopWebShare() { if (S.watchId != null) navigator.geolocation.clearWatch(S.watchId); S.watchId = null; updateShareStatus(); }
-function syncWebShare(n) { n > 0 ? startWebShare() : stopWebShare(); }
+function syncWebShare(n) { if (APP) { toNative({ type: 'sharing', count: n }); return; } n > 0 ? startWebShare() : stopWebShare(); }
 function updateShareStatus() {
-  const el = $('#webShareStatus'); if (!el) return; const q = readQ().length;
+  const el = $('#webShareStatus'); if (!el) return;
+  if (APP) {
+    const n = S.native || {};
+    el.classList.toggle('hidden', !n.sharing && !n.pending);
+    el.textContent = n.sharing ? `This phone is sharing in the background, even when Saathi is closed.${n.pending ? ' ' + n.pending + ' points saved offline, uploading when online.' : ''}` : `${n.pending} offline points waiting to upload.`;
+    return;
+  }
+  const q = readQ().length;
   el.classList.toggle('hidden', S.watchId == null && !q);
   el.textContent = S.watchId != null ? `Sharing from this browser. ${q ? q + ' points saved offline, uploading when you are back online.' : 'All points uploaded.'}` : `${q} offline points waiting to upload.`;
 }
@@ -892,12 +910,31 @@ function connectSocket() {
   S.socket.on('shares:changed', () => loadAll().catch(() => {}));
 }
 
+/* ---------- app update notice (inside the app) ---------- */
+const cmpV = (a, b) => { const x = String(a || '0').split('.').map(Number), y = String(b || '0').split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); } return 0; };
+function checkAppUpdate() {
+  if (!APP) return;
+  fetch('/api/app-info').then((r) => r.json()).then((i) => {
+    if (!i.android || !i.android.available) return;
+    const forced = i.minVersion && cmpV(APP.version, i.minVersion) < 0;
+    const newer = cmpV(i.version, APP.version) > 0;
+    if (forced) {
+      const o = document.createElement('div'); o.className = 'overlay';
+      o.innerHTML = `<div class="card" style="max-width:420px"><h3 style="font-size:22px">Please update Saathi</h3><p class="sub">Version ${esc(i.version)} has important fixes. This version (${esc(APP.version)}) is no longer supported.</p>${i.notes ? `<p class="muted">${esc(i.notes)}</p>` : ''}<a class="btn block" href="/download/android">Download update</a><p class="muted" style="text-align:center;margin:10px 0 0">Install it over this app. Your account stays.</p></div>`;
+      document.body.appendChild(o);
+    } else if (newer) {
+      $('#appUpdate').innerHTML = `<div class="prompt" style="background:var(--ink);color:#fff"><div class="grow"><b>Update available: v${esc(i.version)}</b><span style="opacity:.85">${esc(i.notes || 'New features and fixes.')}</span></div><a class="btn sm" href="/download/android">Update</a></div>`;
+    }
+  }).catch(() => {});
+}
+
 /* ======================= BOOT ======================= */
 function boot() {
   if (!S.token) { $('#authView').classList.remove('hidden'); $('#appView').classList.add('hidden'); showAuth('login'); return; }
   $('#authView').classList.add('hidden'); $('#appView').classList.remove('hidden');
   paintUser(); route();
-  registerSW().then(() => { if (pushSupported() && Notification.permission === 'granted') subscribePush().catch(() => {}); });
+  if (APP) { toNative({ type: 'auth', token: S.token, user: S.user }); checkAppUpdate(); toNative({ type: 'status' }); }
+  if (!APP) registerSW().then(() => { if (pushSupported() && Notification.permission === 'granted') subscribePush().catch(() => {}); });
   connectSocket();
   api('/auth/me').then((r) => { saveUser(r.user); renderOverview(); }).catch(() => {});
   loadAll().then(() => { S.loaded = true; const m = location.hash.match(/^#\/track\/(.+)$/); if (m) openPerson(m[1]); }).catch((e) => toast(e.message));

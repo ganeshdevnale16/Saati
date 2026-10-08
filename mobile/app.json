@@ -3,7 +3,7 @@
     "name": "Saathi",
     "slug": "saathi-devnale",
     "owner": "ganesh.devnale16",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
@@ -33,7 +33,7 @@
     },
     "android": {
       "package": "com.devnaleglobals.saathi",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F7C7E"
@@ -47,7 +47,8 @@
         "POST_NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
-      ]
+      ],
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
       [
@@ -66,6 +67,14 @@
         }
       ],
       "expo-secure-store"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/34fcd6df-43d6-49a0-ad09-4a8ea023118d",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

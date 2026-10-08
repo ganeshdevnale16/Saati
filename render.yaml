@@ -1,0 +1,27 @@
+# One-click deploy on Render (Blueprint). Developed by Devnale Globals.
+# Singapore is Render's closest region to India.
+services:
+  - type: web
+    name: saathi
+    runtime: node
+    region: singapore
+    plan: free            # change to "starter" for real users (always on, no sleep)
+    rootDir: .
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: saathi-db, property: connectionString }
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OTP_DEV_MODE
+        value: "true"
+      - key: AUTO_MIGRATE
+        value: "true"
+      - key: APP_VERSION
+        value: "1.0.0"
+databases:
+  - name: saathi-db
+    region: singapore
+    plan: free            # change to "basic-256mb" or higher for real users (backups, no expiry)

@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saathi · Location sharing & SOS · Devnale Globals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--ink:#16213A;--slate:#5B6478;--paper:#F3F6F4;--line:#DCE3E0;--teal:#0F7C7E;--teal-soft:#DDF0EE;--indigo:#3B4BA8;--indigo-soft:#E2E6F7;--amber:#C9821A;--amber-soft:#FBEFD9;--red:#C8102E;--red-soft:#FBE3E6;--card:#fff}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--paper);font-size:16px;line-height:1.45}
+button,input,select{font:inherit}
+.hidden{display:none!important}
+:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
+
+/* auth */
+.auth{min-height:100%;display:grid;grid-template-columns:1fr minmax(360px,520px)}
+.auth-art{position:sticky;top:0;height:100vh;background:var(--teal);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.auth-art h1{font-size:clamp(56px,8vw,112px);line-height:.9;margin:0;font-weight:900;letter-spacing:-.04em}
+.auth-art p{font-size:22px;max-width:30ch;margin:18px 0 0}
+.rings{position:absolute;right:-120px;bottom:-120px;width:520px;height:520px;border-radius:50%;border:2px solid rgba(255,255,255,.25);box-shadow:0 0 0 70px rgba(255,255,255,.06),0 0 0 140px rgba(255,255,255,.04)}
+.auth-form{padding:48px 40px;overflow:auto;background:var(--paper)}
+.tabs{display:flex;background:#E5EBE8;border-radius:12px;padding:4px;margin-bottom:24px}
+.tabs button{flex:1;border:0;background:none;padding:10px;border-radius:9px;font-weight:700;color:var(--slate);cursor:pointer}
+.tabs button[aria-selected=true]{background:#fff;color:var(--ink)}
+label{display:block;font-size:13px;font-weight:600;color:var(--slate);margin:0 0 6px}
+.field{margin-bottom:14px}
+input,select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:16px}
+.hint{font-size:12px;color:var(--slate);margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+h3{font-size:18px;margin:18px 0 10px}
+.btn{border:1.5px solid var(--teal);background:var(--teal);color:#fff;font-weight:700;padding:12px 18px;border-radius:12px;cursor:pointer;width:100%}
+.btn.outline{background:transparent;color:var(--teal)}
+.btn.indigo{background:var(--indigo);border-color:var(--indigo)}
+.btn.small{width:auto;padding:7px 12px;font-size:14px;border-radius:9px}
+.btn.red{border-color:var(--red);color:var(--red);background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.check{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:15px;color:var(--ink)}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--teal)}
+.link{background:none;border:0;color:var(--teal);font-weight:700;cursor:pointer;padding:6px 0}
+.err{background:var(--red-soft);color:var(--red);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-weight:600}
+.footer{text-align:center;color:var(--slate);font-size:12px;padding:18px 0}
+
+/* app */
+.app{height:100%;display:grid;grid-template-columns:420px 1fr;grid-template-rows:auto 1fr}
+header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--line);padding-top:max(12px,env(safe-area-inset-top))}
+.logo{font-weight:900;font-size:24px;color:var(--teal);letter-spacing:-.02em}
+.by{font-size:12px;color:var(--slate)}
+.who{margin-left:auto;font-weight:600}
+.panel{overflow:auto;padding:16px 18px;border-right:1px solid var(--line);background:var(--paper)}
+#map{height:100%;min-height:320px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.mode{border:0;border-radius:18px;padding:16px;color:#fff;text-align:left;cursor:pointer;min-height:92px;display:flex;flex-direction:column;justify-content:flex-end;opacity:.6}
+.mode b{font-size:24px;font-weight:900}
+.mode span{font-size:14px}
+.mode[aria-pressed=true]{opacity:1;box-shadow:inset 0 0 0 3px rgba(255,255,255,.6)}
+.mode.share{background:var(--teal)}.mode.track{background:var(--indigo)}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.card h4{margin:0 0 4px;font-size:16px}
+.muted{color:var(--slate);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:#fff}
+.track-ui .chip[aria-pressed=true]{background:var(--indigo);border-color:var(--indigo)}
+.pending{background:var(--amber-soft);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
+.sos-alert{background:var(--red);color:#fff;border-radius:14px;padding:14px;margin-bottom:12px}
+.sos-alert b{font-size:18px;display:block}
+.sos-alert a{color:#fff;font-weight:800}
+.sos{position:sticky;bottom:12px;z-index:5;box-shadow:0 6px 18px rgba(200,16,46,.18);overflow:hidden;width:100%;border:2px solid var(--red);background:var(--red-soft);border-radius:16px;padding:16px 18px;text-align:left;cursor:pointer;margin:6px 0 14px;user-select:none;touch-action:none}
+.sos .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--red)}
+.sos .lbl{position:relative;display:flex;gap:12px;align-items:center}
+.sos b{font-size:24px;letter-spacing:1px;font-weight:900}
+.timeline{list-style:none;padding:0;margin:0}
+.timeline li{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.dot{width:11px;height:11px;border-radius:50%;margin-top:6px;flex:none}
+.status{font-size:13px;padding:8px 12px;border-radius:10px;background:var(--teal-soft);margin-bottom:12px}
+.getapp{display:inline-block;margin-top:22px;background:#fff;color:var(--teal);font-weight:900;padding:12px 18px;border-radius:12px;text-decoration:none}
+.appbar{position:fixed;left:0;right:0;bottom:0;z-index:9998;display:flex;align-items:center;gap:12px;background:var(--ink);color:#fff;padding:12px 16px max(12px,env(safe-area-inset-bottom))}
+.appbar b{display:block}.appbar span{font-size:13px;opacity:.8}
+.appbar a{margin-left:auto;background:var(--teal);color:#fff;font-weight:800;text-decoration:none;padding:9px 14px;border-radius:10px;white-space:nowrap}
+.appbar button{background:none;border:0;color:#fff;font-size:22px;cursor:pointer;padding:0 4px}
+.appcard{background:var(--ink);color:#fff;border-radius:16px;padding:16px;margin-bottom:14px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.appcard b{font-size:18px;display:block}.appcard span{font-size:14px;opacity:.85}
+.appcard a{background:#fff;color:var(--ink);font-weight:900;text-decoration:none;padding:10px 14px;border-radius:10px;white-space:nowrap}
+.appcard button{grid-column:1/-1;justify-self:start;background:none;border:0;color:#fff;opacity:.7;cursor:pointer;padding:0;font-size:13px;text-decoration:underline}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;z-index:9999;max-width:90vw}
+@media (max-width:860px){
+  .auth{grid-template-columns:1fr}.auth-art{position:relative;height:auto;padding:32px;min-height:220px}.auth-art p{font-size:18px}
+  .app{grid-template-columns:1fr;grid-template-rows:auto 45vh 1fr}
+  #map{grid-row:2}.panel{grid-row:3;border-right:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH ============ -->
+<section id="authView" class="auth hidden">
+  <div class="auth-art">
+    <div>
+      <h1>Saathi</h1>
+      <p>Share where you are with people you trust. Ask for help with one hold.</p>
+      <a class="getapp" href="/download">Download the app</a>
+    </div>
+    <div class="by" style="color:#fff;opacity:.85">Developed by Devnale Globals</div>
+    <div class="rings" aria-hidden="true"></div>
+  </div>
+  <div class="auth-form">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-auth="login">Sign in</button>
+      <button role="tab" aria-selected="false" data-auth="register">Create account</button>
+    </div>
+    <div id="authErr" class="err hidden"></div>
+
+    <form id="loginForm">
+      <div class="field"><label for="lId">Mobile number or email</label><input id="lId" required autocomplete="username" placeholder="98765 43210"></div>
+      <div class="field"><label for="lPw">Password</label><input id="lPw" type="password" required autocomplete="current-password"></div>
+      <button class="btn">Sign in</button>
+      <button type="button" class="link" data-auth="reset">Forgot password?</button>
+    </form>
+
+    <form id="regForm" class="hidden">
+      <h3>Your details</h3>
+      <div class="field"><label for="rName">Full name *</label><input id="rName" required minlength="2"></div>
+      <div class="field"><label for="rMobile">Mobile number *</label><input id="rMobile" required inputmode="tel" placeholder="98765 43210"><div class="hint">Your mobile number is your Saathi ID.</div></div>
+      <div class="field" id="rOtpRow"><button type="button" class="btn outline" id="rSendOtp">Send verification code</button></div>
+      <div class="field hidden" id="rOtpField"><label for="rOtp">Verification code *</label><input id="rOtp" inputmode="numeric" maxlength="6"></div>
+      <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email" autocomplete="email"><div class="hint">Optional. People can find you by email too.</div></div>
+      <div class="grid2">
+        <div class="field"><label for="rDob">Date of birth</label><input id="rDob" type="date"></div>
+        <div class="field"><label for="rGender">Gender</label><select id="rGender"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option><option value="prefer_not">Prefer not to say</option></select></div>
+      </div>
+      <div class="field"><label for="rCity">City</label><input id="rCity" placeholder="Pune"></div>
+      <h3>Emergency contact</h3>
+      <div class="grid2">
+        <div class="field"><label for="rEName">Name</label><input id="rEName"></div>
+        <div class="field"><label for="rEMobile">Mobile</label><input id="rEMobile" inputmode="tel"></div>
+      </div>
+      <h3>Security</h3>
+      <div class="grid2">
+        <div class="field"><label for="rPw">Password *</label><input id="rPw" type="password" minlength="8" required autocomplete="new-password"></div>
+        <div class="field"><label for="rPw2">Confirm *</label><input id="rPw2" type="password" minlength="8" required autocomplete="new-password"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="rConsent"> I understand my location is shared only with people I approve, only for the time I choose, and I can stop at any time.</label>
+      <button class="btn" id="rSubmit" disabled>Create account</button>
+    </form>
+
+    <form id="resetForm" class="hidden">
+      <h3>Reset password</h3>
+      <div class="field"><label for="xMobile">Registered mobile</label><input id="xMobile" required inputmode="tel"></div>
+      <button type="button" class="btn outline" id="xSend">Send code</button>
+      <div id="xRest" class="hidden" style="margin-top:14px">
+        <div class="field"><label for="xOtp">Verification code</label><input id="xOtp" inputmode="numeric" maxlength="6"></div>
+        <div class="field"><label for="xPw">New password</label><input id="xPw" type="password" minlength="8"></div>
+        <button class="btn">Update password</button>
+      </div>
+      <button type="button" class="link" data-auth="login">Back to sign in</button>
+    </form>
+    <div class="footer">Saathi is developed by Devnale Globals</div>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="appView" class="app hidden">
+  <header>
+    <div><div class="logo">Saathi</div><div class="by">by Devnale Globals</div></div>
+    <div class="who" id="who"></div>
+    <a class="btn small outline" href="/download" style="text-decoration:none">Get the app</a>
+    <button class="btn small outline" id="logout">Sign out</button>
+  </header>
+  <div class="panel">
+    <div class="appcard" id="appCard" hidden>
+      <div><b>Install Saathi on your phone</b><span>Keeps sharing your location even when your phone is locked.</span></div>
+      <a id="appCardBtn" href="/download">Get the app</a>
+      <button onclick="document.getElementById('appCard').hidden=true;try{localStorage.setItem('saathi_appcard','x')}catch{}">Not now</button>
+    </div>
+    <div id="sosOthers"></div>
+    <div id="sosMine"></div>
+    <div class="modes">
+      <button class="mode share" data-mode="share" aria-pressed="true"><b>Share</b><span id="shareSub">Let someone see you</span></button>
+      <button class="mode track" data-mode="track" aria-pressed="false"><b>Track</b><span id="trackSub">See someone live</span></button>
+    </div>
+    <div id="pendingBar"></div>
+
+    <!-- SHARE -->
+    <div id="shareUI">
+      <div id="webShareStatus" class="status hidden"></div>
+      <div class="card">
+        <h4>Share my location with</h4>
+        <div class="field"><label for="sTo">Mobile number or Gmail / email</label><input id="sTo" placeholder="98765 43210 or name@gmail.com"></div>
+        <label>For how long</label>
+        <div class="chips" id="sDur"></div>
+        <div class="field hidden" id="sCustom"><label for="sHours">Hours</label><input id="sHours" type="number" min="0.1" step="0.5"></div>
+        <div class="field"><label for="sNote">Message (optional)</label><input id="sNote" maxlength="140" placeholder="On my way home"></div>
+        <button class="btn" id="sGo">Start sharing</button>
+        <p class="muted">On the web, sharing runs while this tab is open. Use the Saathi app to keep sharing when closed.</p>
+      </div>
+      <h3>Requests for my location</h3><div id="incoming"></div>
+      <h3>Who can see me</h3><div id="sharingList"></div>
+    </div>
+
+    <!-- TRACK -->
+    <div id="trackUI" class="track-ui hidden">
+      <div id="peopleList"></div>
+      <div id="personPanel" class="hidden"></div>
+      <div class="card">
+        <h4>Ask to see someone's location</h4>
+        <div class="field"><label for="tTo">Their mobile number or email</label><input id="tTo"></div>
+        <label>For how long</label>
+        <div class="chips" id="tDur"></div>
+        <div class="field hidden" id="tCustom"><label for="tHours">Hours</label><input id="tHours" type="number" min="0.1" step="0.5"></div>
+        <div class="field"><label for="tNote">Reason (they will see it)</label><input id="tNote" maxlength="140"></div>
+        <button class="btn indigo" id="tGo">Send request</button>
+        <p class="muted">Nothing is shared until they approve. They can stop at any time.</p>
+      </div>
+      <h3>Requests I sent</h3><div id="outgoing"></div>
+    </div>
+
+    <button class="sos" id="sosBtn" aria-label="Hold for 3 seconds to send SOS"><span class="fill" id="sosFill"></span><span class="lbl"><b>SOS</b><span>Hold for 3 seconds to alert your people</span></span></button>
+    <div class="footer">Saathi is developed by Devnale Globals</div>
+  </div>
+  <div id="map"></div>
+</section>
+
+<div class="appbar" id="appbar" hidden>
+  <div><b>Saathi works best as an app</b><span>Keeps sharing when your phone is locked</span></div>
+  <a href="/download">Get app</a>
+  <button aria-label="Close" onclick="document.getElementById('appbar').hidden=true;try{localStorage.setItem('saathi_appbar','x')}catch{}">×</button>
+</div>
+<script>
+try { if (/Android/i.test(navigator.userAgent) && !localStorage.getItem('saathi_appbar')) document.getElementById('appbar').hidden = false; } catch {}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const DUR = [['1h','1 hour'],['1d','1 day'],['1w','1 week'],['1m','1 month'],['custom','Custom'],['until_cancel','Until I stop']];
+const S = { token: null, user: null, mode: 'share', shares: null, people: [], selected: null, markers: {}, layers: [], watchId: null, socket: null };
+try { S.token = localStorage.getItem('saathi_token'); S.user = JSON.parse(localStorage.getItem('saathi_user') || 'null'); } catch {}
+
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 4000); }
+const ago = (t) => { if (!t) return 'no location yet'; const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : new Date(t).toLocaleString(); };
+const left = (e) => { if (!e) return 'until stopped'; const m = Math.max(0, Math.round((new Date(e) - Date.now()) / 60000)); return m >= 1440 ? Math.floor(m / 1440) + 'd ' + Math.floor(m % 1440 / 60) + 'h left' : m >= 60 ? Math.floor(m / 60) + 'h ' + m % 60 + 'm left' : m + ' min left'; };
+const hhmm = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, { method: opts.method || 'GET', headers: { 'Content-Type': 'application/json', ...(S.token ? { Authorization: 'Bearer ' + S.token } : {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401 && S.token) { logout(); throw new Error('Session expired'); }
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+/* ---------- AUTH ---------- */
+function showAuth(mode) {
+  document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.auth === mode));
+  $('#loginForm').classList.toggle('hidden', mode !== 'login');
+  $('#regForm').classList.toggle('hidden', mode !== 'register');
+  $('#resetForm').classList.toggle('hidden', mode !== 'reset');
+  $('#authErr').classList.add('hidden');
+}
+document.querySelectorAll('[data-auth]').forEach((b) => b.onclick = () => showAuth(b.dataset.auth));
+const authErr = (e) => { $('#authErr').textContent = e.message; $('#authErr').classList.remove('hidden'); };
+function setSession(r) { S.token = r.token; S.user = r.user; try { localStorage.setItem('saathi_token', r.token); localStorage.setItem('saathi_user', JSON.stringify(r.user)); } catch {} boot(); }
+
+$('#loginForm').onsubmit = async (e) => { e.preventDefault(); try { setSession(await api('/auth/login', { method: 'POST', body: { id: $('#lId').value, password: $('#lPw').value } })); } catch (x) { authErr(x); } };
+$('#rSendOtp').onclick = async () => {
+  try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#rMobile').value, purpose: 'register' } });
+    $('#rOtpRow').classList.add('hidden'); $('#rOtpField').classList.remove('hidden'); $('#rMobile').readOnly = true; $('#rSubmit').disabled = false;
+    toast(r.devCode ? 'Test mode code: ' + r.devCode : 'Code sent to your mobile'); } catch (x) { authErr(x); }
+};
+$('#regForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    if ($('#rPw').value !== $('#rPw2').value) throw new Error('Passwords do not match');
+    if (!$('#rConsent').checked) throw new Error('Accept the privacy terms to continue');
+    setSession(await api('/auth/register', { method: 'POST', body: {
+      fullName: $('#rName').value, mobile: $('#rMobile').value, otp: $('#rOtp').value, email: $('#rEmail').value, password: $('#rPw').value,
+      dob: $('#rDob').value, gender: $('#rGender').value || undefined, city: $('#rCity').value, emergencyName: $('#rEName').value, emergencyMobile: $('#rEMobile').value, consent: true } }));
+  } catch (x) { authErr(x); }
+};
+$('#xSend').onclick = async () => { try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#xMobile').value, purpose: 'reset' } }); $('#xRest').classList.remove('hidden'); toast(r.devCode ? 'Test mode code: ' + r.devCode : 'Code sent'); } catch (x) { authErr(x); } };
+$('#resetForm').onsubmit = async (e) => { e.preventDefault(); try { await api('/auth/reset', { method: 'POST', body: { mobile: $('#xMobile').value, otp: $('#xOtp').value, password: $('#xPw').value } }); toast('Password updated. Sign in now.'); showAuth('login'); } catch (x) { authErr(x); } };
+
+function logout() { stopWebShare(); try { localStorage.removeItem('saathi_token'); localStorage.removeItem('saathi_user'); } catch {} S.token = null; S.user = null; S.socket?.disconnect(); location.reload(); }
+$('#logout').onclick = logout;
+
+/* ---------- MAP ---------- */
+let map;
+function initMap() {
+  if (map) return;
+  map = L.map('map', { zoomControl: true }).setView([18.5913, 73.7389], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+}
+const pin = (color) => L.divIcon({ className: '', html: `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 2px ${color}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] });
+function clearLayers() { S.layers.forEach((l) => map.removeLayer(l)); S.layers = []; }
+
+/* ---------- CHIPS ---------- */
+function chips(el, customEl, initial) {
+  let v = initial;
+  const render = () => { el.innerHTML = DUR.map(([k, l]) => `<button type="button" class="chip" aria-pressed="${k === v}" data-v="${k}">${l}</button>`).join(''); customEl.classList.toggle('hidden', v !== 'custom'); };
+  el.onclick = (e) => { const b = e.target.closest('[data-v]'); if (b) { v = b.dataset.v; render(); } };
+  render();
+  return () => v;
+}
+const sDur = chips($('#sDur'), $('#sCustom'), '1h');
+const tDur = chips($('#tDur'), $('#tCustom'), '1d');
+const durBody = (d, hrs) => ({ duration: d, durationMinutes: d === 'custom' ? Math.round(Number(hrs) * 60) : undefined });
+
+/* ---------- MODE ---------- */
+document.querySelectorAll('[data-mode]').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
+function setMode(m) {
+  S.mode = m;
+  document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === m));
+  $('#shareUI').classList.toggle('hidden', m !== 'share'); $('#trackUI').classList.toggle('hidden', m !== 'track');
+  if (m === 'track') drawPeople();
+}
+
+/* ---------- LOAD ---------- */
+async function loadAll() {
+  const [sh, live, sos] = await Promise.all([api('/shares'), api('/locations/live'), api('/sos/active')]);
+  S.shares = sh; S.people = live.people;
+  $('#shareSub').textContent = sh.sharing.length ? sh.sharing.length + ' can see you' : 'Let someone see you';
+  $('#trackSub').textContent = live.people.length ? 'You see ' + live.people.length : 'See someone live';
+  $('#pendingBar').innerHTML = sh.incoming.length ? `<div class="pending"><span>${sh.incoming.length} ${sh.incoming.length === 1 ? 'person wants' : 'people want'} to see your location</span><button class="btn small" onclick="setMode('share')">Review</button></div>` : '';
+  $('#incoming').innerHTML = sh.incoming.length ? sh.incoming.map((r) => `<div class="card"><h4>${esc(r.viewer_name)}</h4><div class="muted">${esc(r.viewer_mobile)} · for ${esc(DUR.find((d) => d[0] === r.duration)?.[1])}${r.note ? ' · “' + esc(r.note) + '”' : ''}</div><div class="row" style="margin-top:10px"><button class="btn small outline" onclick="act('${r.id}','reject')">Decline</button><button class="btn small" onclick="act('${r.id}','approve')">Approve</button></div></div>`).join('') : '<p class="muted">No requests right now.</p>';
+  $('#sharingList').innerHTML = sh.sharing.length ? sh.sharing.map((s) => `<div class="card row"><div><h4>${esc(s.viewer_name || s.invite_mobile || s.invite_email)}</h4><div class="muted">${s.viewer_id ? '' : 'Invited, not joined yet · '}${left(s.expires_at)}</div></div><button class="btn small red" onclick="act('${s.id}','stop')">Stop</button></div>`).join('') : '<p class="muted">No one. Add a number or email above.</p>';
+  $('#outgoing').innerHTML = sh.outgoing.length ? sh.outgoing.map((r) => `<div class="card row"><div><h4>${esc(r.sharer_name || r.invite_mobile || r.invite_email)}</h4><div class="muted">${r.sharer_id ? 'Waiting for approval' : 'Not on Saathi yet'}</div></div><button class="btn small red" onclick="act('${r.id}','stop')">Withdraw</button></div>`).join('') : '<p class="muted">None.</p>';
+  $('#sosOthers').innerHTML = sos.others.map((e) => `<div class="sos-alert"><b>${esc(e.full_name)} sent an SOS</b>${ago(e.created_at)} · <a href="tel:${esc(e.mobile)}">Call ${esc(e.mobile)}</a> · <a href="#" onclick="openPerson('${e.user_id}');return false">See location</a></div>`).join('');
+  $('#sosMine').innerHTML = sos.mine ? `<div class="card" style="border-color:var(--red)"><h4>Your SOS is active</h4><div class="muted">Sent ${ago(sos.mine.created_at)}</div><button class="link" style="color:var(--red)" onclick="resolveSos('${sos.mine.id}')">I'm safe now</button></div>` : '';
+  syncWebShare(sh.sharing.length);
+  if (S.mode === 'track') drawPeople();
+}
+window.act = async (id, a) => {
+  try {
+    if (a === 'approve') startWebShare();
+    await api(`/shares/${id}/${a}`, { method: 'POST', body: {} });
+    toast({ approve: 'Approved. They can see your location now.', reject: 'Request declined', stop: 'Stopped' }[a]); loadAll();
+  } catch (e) { toast(e.message); }
+};
+window.resolveSos = async (id) => { await api(`/sos/${id}/resolve`, { method: 'POST' }); toast('Your people were told you are safe'); loadAll(); };
+
+$('#sGo').onclick = async () => {
+  try { const r = await api('/shares/offer', { method: 'POST', body: { to: $('#sTo').value, note: $('#sNote').value || undefined, ...durBody(sDur(), $('#sHours').value) } });
+    startWebShare(); toast(r.invited ? 'Invite saved. They will see you after signing up.' : 'Sharing started'); $('#sTo').value = ''; loadAll(); } catch (e) { toast(e.message); }
+};
+$('#tGo').onclick = async () => {
+  try { const r = await api('/shares/request', { method: 'POST', body: { to: $('#tTo').value, note: $('#tNote').value || undefined, ...durBody(tDur(), $('#tHours').value) } });
+    toast(r.invited ? 'Request saved. They will see it after signing up.' : 'Request sent'); $('#tTo').value = ''; loadAll(); } catch (e) { toast(e.message); }
+};
+
+/* ---------- TRACK ---------- */
+function drawPeople() {
+  if (!map) return;
+  const ps = S.people;
+  $('#peopleList').innerHTML = ps.length ? '<h3 style="margin-top:0">People you can see</h3>' + ps.map((p) => `<div class="card" style="cursor:pointer;${p.sos_active ? 'border:2px solid var(--red)' : ''}" onclick="openPerson('${p.user_id}')"><div class="row"><h4>${esc(p.full_name)}${p.sos_active ? ' · SOS' : ''}</h4><span class="muted">${p.battery != null ? Math.round(p.battery * 100) + '%' : ''}</span></div><div class="muted">Seen ${ago(p.recorded_at)} · ${left(p.expires_at)}</div></div>`).join('') : '<p class="muted">No one is sharing with you yet. Ask someone below.</p>';
+  Object.values(S.markers).forEach((m) => map.removeLayer(m)); S.markers = {};
+  const pts = [];
+  ps.filter((p) => p.lat != null).forEach((p) => {
+    S.markers[p.user_id] = L.marker([p.lat, p.lng], { icon: pin(p.sos_active ? '#C8102E' : '#3B4BA8') }).addTo(map).bindTooltip(p.full_name, { permanent: true, direction: 'top', offset: [0, -10] }).on('click', () => openPerson(p.user_id));
+    pts.push([p.lat, p.lng]);
+  });
+  if (pts.length && !S.selected) map.fitBounds(pts, { padding: [60, 60], maxZoom: 15 });
+}
+
+window.openPerson = async (uid, period = 'today') => {
+  setMode('track');
+  const p = S.people.find((x) => x.user_id === uid); if (!p) return;
+  S.selected = uid;
+  const from = period === 'today' ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date(Date.now() - { '1h': 3600e3, '24h': 864e5, '7d': 6048e5 }[period]);
+  const h = await api(`/locations/history/${uid}?from=${encodeURIComponent(from.toISOString())}`);
+  clearLayers();
+  if (h.points.length > 1) S.layers.push(L.polyline(h.points.map((q) => [q.lat, q.lng]), { color: '#3B4BA8', weight: 4 }).addTo(map));
+  h.timeline.filter((t) => t.type === 'stay').forEach((t) => S.layers.push(L.circleMarker([t.lat, t.lng], { radius: 7, color: '#C9821A', fillOpacity: .9 }).addTo(map).bindTooltip(`${hhmm(t.from)}–${hhmm(t.to)} · ${t.minutes} min`)));
+  const c = p.alert_center === 'fixed' && p.alert_lat != null ? [p.alert_lat, p.alert_lng] : S.me ? [S.me.lat, S.me.lng] : null;
+  if (p.alert_enabled && c) S.layers.push(L.circle(c, { radius: p.alert_radius_m, color: '#0F7C7E', weight: 2, fillOpacity: .06 }).addTo(map));
+  if (p.lat != null) map.setView([p.lat, p.lng], 14);
+  const periods = [['1h', 'Last hour'], ['today', 'Today'], ['24h', '24 hours'], ['7d', '7 days']];
+  $('#personPanel').classList.remove('hidden');
+  $('#personPanel').innerHTML = `<div class="card">
+    <div class="row"><h4 style="font-size:20px">${esc(p.full_name)}</h4><button class="link" onclick="closePerson()">Close</button></div>
+    <div class="muted">Seen ${ago(p.recorded_at)} · ${left(p.expires_at)}</div>
+    <div class="row" style="margin:10px 0"><a class="btn small outline" style="text-decoration:none;color:var(--indigo);border-color:var(--indigo)" href="tel:${esc(p.mobile)}">Call</a>${p.lat != null ? `<a class="btn small outline" style="text-decoration:none;color:var(--indigo);border-color:var(--indigo)" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}">Directions</a>` : ''}</div>
+    <h3>Where they've been</h3>
+    <div class="chips">${periods.map(([k, l]) => `<button class="chip" aria-pressed="${k === period}" onclick="openPerson('${uid}','${k}')">${l}</button>`).join('')}</div>
+    <ul class="timeline">${h.timeline.length ? h.timeline.slice().reverse().map((t) => `<li ${t.lat ? `onclick="map.setView([${t.lat},${t.lng}],16)"` : ''}><span class="dot" style="background:${t.type === 'stay' ? '#C9821A' : '#3B4BA8'}"></span><span><b>${hhmm(t.from)} – ${hhmm(t.to)}</b><br><span class="muted">${t.type === 'stay' ? 'Stayed in one place for ' + t.minutes + ' min' : 'Travelled ' + (t.distanceM / 1000).toFixed(1) + ' km'}</span></span></li>`).join('') : '<li class="muted">No movement in this period.</li>'}</ul>
+    <h3>Nearby alert</h3>
+    <label class="check"><input type="checkbox" id="aOn" ${p.alert_enabled ? 'checked' : ''}> Notify me when ${esc(p.full_name.split(' ')[0])} comes within</label>
+    <div class="grid2"><div class="field"><label for="aKm">Distance (km)</label><input id="aKm" type="number" min="0.2" step="0.5" value="${p.alert_radius_m / 1000}"></div>
+    <div class="field"><label for="aCenter">Around</label><select id="aCenter"><option value="me" ${p.alert_center === 'me' ? 'selected' : ''}>Me</option><option value="fixed" ${p.alert_center === 'fixed' ? 'selected' : ''}>A place (click map)</option></select></div></div>
+    <button class="btn indigo" onclick="saveAlert('${uid}')">Save alert</button>
+  </div>`;
+  S.pickedPlace = p.alert_lat != null ? { lat: p.alert_lat, lng: p.alert_lng } : null;
+};
+window.closePerson = () => { S.selected = null; clearLayers(); $('#personPanel').classList.add('hidden'); drawPeople(); };
+window.saveAlert = async (uid) => {
+  const p = S.people.find((x) => x.user_id === uid); const center = $('#aCenter').value;
+  try {
+    if (center === 'fixed' && !S.pickedPlace) throw new Error('Click on the map to choose the place first');
+    await api(`/shares/${p.share_id}/alert`, { method: 'PATCH', body: { enabled: $('#aOn').checked, radiusKm: Number($('#aKm').value), center, lat: center === 'fixed' ? S.pickedPlace.lat : undefined, lng: center === 'fixed' ? S.pickedPlace.lng : undefined } });
+    toast('Alert saved'); await loadAll(); openPerson(uid);
+  } catch (e) { toast(e.message); }
+};
+
+/* ---------- WEB SHARING with offline queue ---------- */
+const QK = 'saathi_queue';
+const readQ = () => { try { return JSON.parse(localStorage.getItem(QK) || '[]'); } catch { return []; } };
+const writeQ = (q) => { try { localStorage.setItem(QK, JSON.stringify(q.slice(-5000))); } catch {} };
+let flushing = false;
+async function flushQ() {
+  if (flushing || !navigator.onLine) return; flushing = true;
+  try { let q = readQ(); while (q.length) { const chunk = q.slice(0, 300); await api('/locations/batch', { method: 'POST', body: { points: chunk } }); const ids = new Set(chunk.map((c) => c.clientId)); q = readQ().filter((c) => !ids.has(c.clientId)); writeQ(q); } } catch {} finally { flushing = false; updateShareStatus(); }
+}
+window.addEventListener('online', flushQ);
+let lastSent = 0;
+function startWebShare() {
+  if (S.watchId != null || !navigator.geolocation) return;
+  S.watchId = navigator.geolocation.watchPosition((pos) => {
+    S.me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    if (Date.now() - lastSent < 20000) return; lastSent = Date.now();
+    const q = readQ(); q.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, speed: pos.coords.speed, heading: pos.coords.heading, recordedAt: new Date(pos.timestamp).toISOString(), clientId: 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) });
+    writeQ(q); flushQ();
+  }, (err) => toast('Location blocked: allow location for this site to share.'), { enableHighAccuracy: true, maximumAge: 10000 });
+  updateShareStatus();
+}
+function stopWebShare() { if (S.watchId != null) navigator.geolocation.clearWatch(S.watchId); S.watchId = null; updateShareStatus(); }
+function syncWebShare(n) { n > 0 ? startWebShare() : stopWebShare(); }
+function updateShareStatus() {
+  const el = $('#webShareStatus'); if (!el) return;
+  const q = readQ().length;
+  el.classList.toggle('hidden', S.watchId == null && !q);
+  el.textContent = S.watchId != null ? `Sharing from this browser. ${q ? q + ' points saved offline, will upload when online.' : 'All points uploaded.'}` : `${q} offline points waiting to upload.`;
+}
+
+/* ---------- SOS (hold 3s) ---------- */
+(function () {
+  const b = $('#sosBtn'), fill = $('#sosFill'); let t0 = 0, raf = null, sent = false;
+  const tick = () => { const p = Math.min(1, (Date.now() - t0) / 3000); fill.style.width = p * 100 + '%'; if (p >= 1) { sent = true; sendSos(); return; } raf = requestAnimationFrame(tick); };
+  const down = (e) => { e.preventDefault(); sent = false; t0 = Date.now(); raf = requestAnimationFrame(tick); };
+  const up = () => { cancelAnimationFrame(raf); if (!sent) fill.style.width = '0'; };
+  b.addEventListener('pointerdown', down); ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, up));
+  b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) down(e); });
+  b.addEventListener('keyup', up);
+  async function sendSos() {
+    const pos = await new Promise((res) => navigator.geolocation ? navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res({}), { timeout: 5000 }) : res({}));
+    try { const r = await api('/sos', { method: 'POST', body: { ...pos, message: 'I need help.' } }); toast(r.notified ? `SOS sent to ${r.notified} people` : 'SOS saved, but no one is connected yet. Add an emergency contact.'); loadAll(); }
+    catch (e) { toast('SOS failed: ' + e.message + '. Call 112.'); }
+    setTimeout(() => fill.style.width = '0', 800);
+  }
+})();
+
+/* ---------- BOOT ---------- */
+function boot() {
+  if (!S.token) { $('#authView').classList.remove('hidden'); $('#appView').classList.add('hidden'); showAuth('login'); return; }
+  $('#authView').classList.add('hidden'); $('#appView').classList.remove('hidden');
+  $('#who').textContent = S.user?.full_name || '';
+  try { if (!localStorage.getItem('saathi_appcard')) $('#appCard').hidden = false; } catch {}
+  if (/Android/i.test(navigator.userAgent)) $('#appCardBtn').href = '/download/android';
+  initMap();
+  map.on('click', (e) => { if ($('#aCenter')?.value === 'fixed') { S.pickedPlace = { lat: e.latlng.lat, lng: e.latlng.lng }; clearLayers(); S.layers.push(L.marker(e.latlng).addTo(map)); toast('Place selected. Save the alert to apply.'); } });
+  if (window.io) {
+    S.socket = io({ auth: { token: S.token } });
+    S.socket.on('location:update', (u) => {
+      const p = S.people.find((x) => x.user_id === u.userId); if (!p) return;
+      Object.assign(p, { lat: u.lat, lng: u.lng, recorded_at: u.recorded_at, battery: u.battery });
+      const m = S.markers[u.userId]; if (m) m.setLatLng([u.lat, u.lng]); else if (S.mode === 'track') drawPeople();
+    });
+    S.socket.on('notification', (n) => { toast(n.title); if (n.type === 'sos' && Notification?.permission === 'granted') new Notification(n.title, { body: n.body }); loadAll(); });
+    S.socket.on('shares:changed', loadAll);
+  }
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  loadAll().catch((e) => toast(e.message)); flushQ();
+  setInterval(() => loadAll().catch(() => {}), 60000);
+}
+boot();
+</script>
+</body>
+</html>

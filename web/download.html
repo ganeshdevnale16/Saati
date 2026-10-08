@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Download Saathi · Location sharing & SOS · Devnale Globals</title>
+<meta name="description" content="Download the Saathi app to share your live location with people you trust and send SOS alerts. Developed by Devnale Globals.">
+<meta property="og:title" content="Saathi — share your location, get help fast">
+<meta property="og:description" content="Download the Saathi app for Android. Developed by Devnale Globals.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16213A;--slate:#5B6478;--paper:#F3F6F4;--line:#DCE3E0;--teal:#0F7C7E;--teal-dark:#0B6264;--teal-soft:#DDF0EE;--red:#C8102E;--amber-soft:#FBEFD9}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--paper);line-height:1.5;font-size:17px}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+.hero{background:var(--teal);color:#fff;position:relative;overflow:hidden;padding:max(28px,env(safe-area-inset-top)) 24px 64px}
+.hero::after{content:"";position:absolute;right:-160px;top:40px;width:560px;height:560px;border-radius:50%;border:2px solid rgba(255,255,255,.22);box-shadow:0 0 0 80px rgba(255,255,255,.05),0 0 0 160px rgba(255,255,255,.035);pointer-events:none}
+.wrap{max-width:1080px;margin:0 auto;position:relative;z-index:1}
+nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:56px}
+.brand{font-weight:900;font-size:24px;letter-spacing:-.02em}
+.brand small{display:block;font-weight:600;font-size:12px;opacity:.85;letter-spacing:0}
+nav a{font-weight:700;text-decoration:none;border:1.5px solid rgba(255,255,255,.7);padding:8px 14px;border-radius:10px}
+.grid{display:grid;grid-template-columns:1.25fr .9fr;gap:48px;align-items:center}
+h1{font-size:clamp(48px,7.5vw,96px);line-height:.92;letter-spacing:-.04em;margin:0 0 20px;font-weight:900}
+.lead{font-size:21px;max-width:32ch;margin:0 0 30px;opacity:.95}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:12px;background:#fff;color:var(--teal-dark);font-weight:900;font-size:19px;padding:16px 24px;border-radius:16px;text-decoration:none;border:0;cursor:pointer}
+.btn svg{width:26px;height:26px;flex:none}
+.btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.75);font-weight:700;font-size:17px;padding:14px 20px}
+.btn[aria-disabled=true]{opacity:.55;pointer-events:none}
+.meta{margin-top:14px;font-size:14px;opacity:.85}
+
+.qr{background:#fff;color:var(--ink);border-radius:24px;padding:26px;text-align:center;max-width:340px;justify-self:end}
+.qr h2{font-size:20px;margin:0 0 4px}
+.qr p{margin:0 0 16px;color:var(--slate);font-size:15px}
+#qrcode{display:inline-block;padding:10px;border-radius:12px;border:1px solid var(--line)}
+#qrcode img,#qrcode canvas{display:block;width:200px;height:200px}
+.qr .link{font-size:13px;color:var(--slate);word-break:break-all;margin-top:12px}
+
+main .wrap{padding:56px 24px}
+.notice{background:var(--amber-soft);border-radius:16px;padding:16px 20px;margin:-88px 0 40px;position:relative;z-index:2;font-weight:600;box-shadow:0 8px 24px rgba(22,33,58,.08)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+h3{font-size:26px;letter-spacing:-.01em;margin:0 0 18px}
+ol.steps{list-style:none;padding:0;margin:0;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:40px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+ol.steps li::before{content:counter(s);width:32px;height:32px;border-radius:50%;background:var(--teal);color:#fff;font-weight:900;display:grid;place-items:center}
+ol.steps b{display:block}
+ol.steps span{color:var(--slate);font-size:15px}
+.feat{display:grid;gap:4px}
+.feat div{padding:14px 0;border-top:1px solid var(--line)}
+.feat b{display:block}
+.feat span{color:var(--slate);font-size:15px}
+.feat .sos b{color:var(--red)}
+.ios{margin-top:28px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+footer{text-align:center;color:var(--slate);font-size:14px;padding:28px 24px max(28px,env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+footer b{color:var(--ink)}
+
+@media (max-width:820px){
+  .grid,.cols{grid-template-columns:1fr}
+  .qr{display:none}
+  nav{margin-bottom:36px}
+  .hero{padding-bottom:84px}
+  .btn{width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="wrap">
+    <nav>
+      <div class="brand">Saathi<small>by Devnale Globals</small></div>
+      <a href="/">Open web app</a>
+    </nav>
+    <div class="grid">
+      <div>
+        <h1>Get Saathi on your phone</h1>
+        <p class="lead">Share your live location with the people you trust, even when the app is closed. Send an SOS with one hold.</p>
+        <div class="cta">
+          <a class="btn" id="androidBtn" href="/download/android" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.48l1.84-3.18a.38.38 0 00-.66-.38l-1.86 3.22a11.5 11.5 0 00-9.84 0L5.22 5.92a.38.38 0 10-.66.38L6.4 9.48A10.8 10.8 0 001 18h22a10.8 10.8 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg>
+            <span id="androidLabel">Download for Android</span>
+          </a>
+          <a class="btn ghost" href="/">Use in browser</a>
+        </div>
+        <div class="meta" id="meta">Checking the latest version…</div>
+      </div>
+      <div class="qr" id="qrBox">
+        <h2>On a computer?</h2>
+        <p>Scan with your phone camera to download.</p>
+        <div id="qrcode" role="img" aria-label="QR code to download the Saathi app"></div>
+        <div class="link" id="qrLink"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main>
+  <div class="wrap">
+    <div class="notice" id="notice" hidden></div>
+    <div class="cols">
+      <section>
+        <h3>Install on Android</h3>
+        <ol class="steps">
+          <li><div><b>Tap "Download for Android"</b><span>The file Saathi.apk saves to your Downloads.</span></div></li>
+          <li><div><b>Open the downloaded file</b><span>If Android asks, allow "Install unknown apps" for Chrome. This is normal for apps outside the Play Store.</span></div></li>
+          <li><div><b>Tap Install, then Open</b><span>Sign up with your mobile number. You'll get a verification code.</span></div></li>
+          <li><div><b>Set location to "Allow all the time"</b><span>This lets sharing continue when the app is closed. Saathi shows a notification whenever it's sharing.</span></div></li>
+          <li><div><b>Set battery to "Unrestricted"</b><span>Settings → Apps → Saathi → Battery. Needed on Xiaomi, Vivo, Oppo, Realme and Samsung, which stop background apps.</span></div></li>
+        </ol>
+        <div class="ios" id="iosBox">
+          <b>Using an iPhone?</b>
+          <div style="color:var(--slate);font-size:15px;margin-top:4px" id="iosText">The iPhone app is coming soon. Meanwhile, use Saathi in Safari: <a href="/">open the web app</a>.</div>
+        </div>
+      </section>
+      <section>
+        <h3>What you can do</h3>
+        <div class="feat">
+          <div><b>Share for as long as you choose</b><span>1 hour, 1 day, 1 week, 1 month, custom, or until you stop.</span></div>
+          <div><b>Ask to see someone's location</b><span>They approve or decline. Nothing is shared without consent.</span></div>
+          <div><b>See live location and history</b><span>A timeline of where they stayed and when, for today or the past week.</span></div>
+          <div><b>Get alerts when someone is near</b><span>Choose the distance, 5 km by default, around you or a place like home.</span></div>
+          <div class="sos"><b>SOS in one hold</b><span>Alerts everyone connected to you with your location and number.</span></div>
+          <div><b>Works without internet</b><span>Locations save on your phone and upload when you're back online.</span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer>Saathi is developed by <b>Devnale Globals</b> · © <span id="yr"></span></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+const ua = navigator.userAgent;
+const isAndroid = /Android/i.test(ua);
+const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const btn = document.getElementById('androidBtn');
+const meta = document.getElementById('meta');
+const notice = document.getElementById('notice');
+
+fetch('/api/app-info').then((r) => r.json()).then((info) => {
+  const a = info.android;
+  if (a.available) {
+    btn.setAttribute('aria-disabled', 'false');
+    meta.textContent = `Version ${info.version}${a.sizeMb ? ` · ${a.sizeMb} MB` : ''} · Android 8 or newer`;
+    if (a.playStoreUrl) document.getElementById('androidLabel').textContent = 'Get it on Google Play';
+  } else {
+    meta.textContent = 'The Android app is being prepared. Use the web app for now.';
+  }
+  if (info.ios.available) {
+    document.getElementById('iosText').innerHTML = `<a href="${info.ios.url}">Download from the App Store</a>`;
+  }
+  if (isIOS) {
+    notice.hidden = false;
+    notice.innerHTML = info.ios.available
+      ? `You're on an iPhone. <a href="${info.ios.url}">Get Saathi from the App Store</a>.`
+      : 'You\'re on an iPhone. The iPhone app is coming soon. You can <a href="/">use Saathi in your browser</a> right now.';
+  }
+  // QR code for desktop visitors
+  const target = location.origin + '/download';
+  document.getElementById('qrLink').textContent = target;
+  if (window.QRCode) new QRCode(document.getElementById('qrcode'), { text: target, width: 200, height: 200, colorDark: '#16213A', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+}).catch(() => { meta.textContent = 'Could not reach the server. Try again in a minute.'; });
+
+if (isAndroid) document.getElementById('qrBox').style.display = 'none';
+</script>
+</body>
+</html>

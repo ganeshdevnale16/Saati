@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Saathi",
+    "slug": "saathi-devnale",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "extra": {
+      "apiUrl": "https://YOUR-RENDER-APP.onrender.com",
+      "company": "Devnale Globals"
+    },
+    "ios": {
+      "bundleIdentifier": "com.devnaleglobals.saathi",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Saathi uses your location to share it with people you choose.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Saathi keeps sharing your location with people you chose, even when the app is closed, until the share ends or you stop it.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.devnaleglobals.saathi",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_ANDROID_KEY"
+        }
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Saathi keeps sharing your location with people you chose, even when the app is closed, until the share ends or you stop it."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0F7C7E"
+        }
+      ],
+      "expo-secure-store"
+    ]
+  }
+}

@@ -4,13 +4,18 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { C } from '../theme';
-import { Button, Field, Card, Footer, ago } from '../components/ui';
+import { Button, Field, Card, Chips, Footer, ago } from '../components/ui';
 import { pendingCount, flush } from '../location/queue';
 import { COMPANY } from '../config';
 
 export default function ProfileScreen() {
   const { user, setUser, signOut } = useAuth();
-  const [f, setF] = useState({ fullName: user.full_name, city: user.city || '', emergencyName: user.emergency_name || '', emergencyMobile: user.emergency_mobile || '' });
+  const [f, setF] = useState({ fullName: user.full_name, email: user.email || '', dob: user.dob || '', gender: user.gender || '', city: user.city || '', emergencyName: user.emergency_name || '', emergencyMobile: user.emergency_mobile || '' });
+  const [pw, setPw] = useState({ current: '', password: '' });
+  const changePw = async () => {
+    try { await api('/auth/password', { method: 'POST', body: pw }); setPw({ current: '', password: '' }); Alert.alert('Done', 'Your password is updated.'); }
+    catch (e) { Alert.alert('Could not update', e.message); }
+  };
   const [items, setItems] = useState([]);
   const [queued, setQueued] = useState(0);
 
@@ -37,10 +42,22 @@ export default function ProfileScreen() {
       <Card>
         <Text style={st.h}>Details</Text>
         <Field label="Full name" value={f.fullName} onChangeText={set('fullName')} />
+        <Field label="Email" value={f.email} onChangeText={set('email')} keyboardType="email-address" autoCapitalize="none" />
+        <Field label="Date of birth" value={f.dob} onChangeText={set('dob')} placeholder="YYYY-MM-DD" />
+        <Text style={st.label}>Gender</Text>
+        <Chips value={f.gender} onChange={set('gender')} options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }, { value: 'prefer_not', label: 'Prefer not to say' }]} />
         <Field label="City" value={f.city} onChangeText={set('city')} />
         <Field label="Emergency contact name" value={f.emergencyName} onChangeText={set('emergencyName')} />
         <Field label="Emergency contact mobile" value={f.emergencyMobile} onChangeText={set('emergencyMobile')} keyboardType="phone-pad" hint="They get your SOS alerts if they use Saathi." />
         <Button title="Save changes" onPress={save} />
+      </Card>
+
+      <Card>
+        <Text style={st.h}>Password</Text>
+        <Field label="Current password" value={pw.current} onChangeText={(v) => setPw((p) => ({ ...p, current: v }))} secureTextEntry />
+        <Field label="New password" value={pw.password} onChangeText={(v) => setPw((p) => ({ ...p, password: v }))} secureTextEntry hint="At least 8 characters" />
+        <Button title="Update password" variant="outline" onPress={changePw} />
+        <Text style={[st.muted, { marginTop: 10 }]}>To change your mobile number, sign in on the Saathi website and open Profile & settings.</Text>
       </Card>
 
       <Card>
@@ -67,6 +84,7 @@ export default function ProfileScreen() {
 
 const st = StyleSheet.create({
   h: { fontSize: 18, fontWeight: '900', color: C.ink, marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: C.slate, marginBottom: 6 },
   section: { fontSize: 18, fontWeight: '800', color: C.ink, marginVertical: 10 },
   muted: { color: C.slate },
   n: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },

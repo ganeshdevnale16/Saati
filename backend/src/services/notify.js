@@ -1,5 +1,6 @@
 const { one } = require('../db');
 const { sendPush } = require('./push');
+const webpush = require('./webpush');
 
 let io = null;
 const setIO = (i) => { io = i; };
@@ -12,6 +13,7 @@ async function notify(userId, { type, title, body, data = {}, urgent = false }) 
     'INSERT INTO notifications(user_id,type,title,body,data) VALUES ($1,$2,$3,$4,$5) RETURNING *',
     [userId, type, title, body, data]);
   emitTo(userId, 'notification', row);
+  webpush.sendToUser(userId, { title, body, data: { ...data, type }, urgent }).catch(() => {});
   const u = await one('SELECT push_token FROM users WHERE id=$1', [userId]);
   if (u?.push_token) {
     await sendPush(u.push_token, {

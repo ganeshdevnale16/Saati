@@ -15,7 +15,8 @@ const jobs = require('./jobs/maintenance');
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+// referrerPolicy: map tile servers require a Referer header, helmet's default "no-referrer" gets tiles blocked
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, referrerPolicy: { policy: 'strict-origin-when-cross-origin' } }));
 app.use(cors({ origin: config.corsOrigin === '*' ? true : config.corsOrigin.split(',') }));
 app.use(express.json({ limit: '1mb' }));
 
@@ -28,6 +29,7 @@ app.use('/api/shares', requireAuth, require('./routes/shares'));
 app.use('/api/locations', requireAuth, require('./routes/locations'));
 app.use('/api/sos', requireAuth, require('./routes/sos'));
 app.use('/api/notifications', requireAuth, require('./routes/notifications'));
+app.use('/api/push', require('./routes/push'));
 
 // ---------- App download ----------
 const fs = require('fs');
@@ -78,6 +80,7 @@ setIO(io);
 
 (async () => {
   if (config.autoMigrate) await migrate();
+  await require('./services/webpush').init();
   jobs.start();
   server.listen(config.port, () => console.log(`${config.brand.app} API by ${config.brand.company} on :${config.port}`));
 })().catch((e) => { console.error(e); process.exit(1); });

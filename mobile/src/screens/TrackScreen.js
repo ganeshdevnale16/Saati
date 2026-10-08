@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Text, View, StyleSheet, Alert, Pressable } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker } from 'react-native-maps';
+import LeafletMap from '../components/LeafletMap';
 import { api } from '../api';
 import { getSocket } from '../socket';
 import { C } from '../theme';
@@ -44,14 +44,11 @@ export default function TrackScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 18 }} keyboardShouldPersistTaps="handled">
       {located.length > 0 && (
-        <MapView style={st.map}
-          initialRegion={{ latitude: located[0].lat, longitude: located[0].lng, latitudeDelta: 0.2, longitudeDelta: 0.2 }}>
-          {located.map((p) => (
-            <Marker key={p.user_id} coordinate={{ latitude: p.lat, longitude: p.lng }} title={p.full_name}
-              description={ago(p.recorded_at)} pinColor={p.sos_active ? C.red : C.indigo}
-              onCalloutPress={() => navigation.navigate('Person', { userId: p.user_id, name: p.full_name })} />
-          ))}
-        </MapView>
+        <LeafletMap
+          style={st.map}
+          data={{ markers: located.map((p) => ({ id: p.user_id, lat: p.lat, lng: p.lng, label: p.full_name.split(' ')[0], color: p.sos_active ? C.red : C.indigo })) }}
+          onMarkerPress={(id) => { const p = located.find((x) => x.user_id === id); navigation.navigate('Person', { userId: id, name: p?.full_name }); }}
+        />
       )}
 
       <Text style={st.section}>People you can see</Text>

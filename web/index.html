@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Saathi · Location sharing & SOS · Devnale Globals</title>
 <meta name="theme-color" content="#0F7C7E">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -73,7 +78,8 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 .nav a[aria-current=page]{background:rgba(255,255,255,.12);color:#fff}
 .badge{margin-left:auto;background:var(--amber);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
 .badge.red{background:var(--red)}
-.side .spacer{flex:1}
+.side .spacer{flex:1;min-height:12px}
+.side > *{flex-shrink:0}
 .side .me{display:flex;align-items:center;gap:10px;padding:12px 10px;border-top:1px solid rgba(255,255,255,.12);margin-top:12px}
 .avatar{width:36px;height:36px;border-radius:50%;background:var(--teal);display:grid;place-items:center;font-weight:900;flex:none}
 .side .me div{min-width:0}
@@ -197,6 +203,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 <section id="authView" class="auth hidden">
   <div class="auth-art">
     <div>
+      <img src="/logo-96.png" alt="" width="64" height="64" style="border-radius:16px;box-shadow:0 0 0 3px rgba(255,255,255,.35);margin-bottom:18px;display:block">
       <h1>Saathi</h1>
       <p>Share where you are with people you trust. Ask for help with one hold.</p>
       <a class="getapp" href="/download">Download the app</a>
@@ -263,7 +270,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 <!-- ======================= APP ======================= -->
 <section id="appView" class="shell hidden">
   <aside class="side">
-    <div class="brand"><b>Saathi</b><span>by Devnale Globals</span></div>
+    <div class="brand" style="display:flex;align-items:center;gap:12px"><img src="/logo-96.png" alt="" width="40" height="40" style="border-radius:10px"><div><b>Saathi</b><span>by Devnale Globals</span></div></div>
     <nav class="nav" aria-label="Main">
       <a href="#/overview" data-nav="overview"><svg class="i" viewBox="0 0 24 24"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg>Overview</a>
       <a href="#/share" data-nav="share"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/></svg>Share location</a>
@@ -281,7 +288,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 
   <div class="main">
     <header class="top">
-      <span class="mobile-brand">Saathi</span>
+      <span class="mobile-brand" style="align-items:center;gap:8px"><img src="/logo-96.png" alt="" width="30" height="30" style="border-radius:8px;vertical-align:middle;margin-right:8px">Saathi</span>
       <h2 id="pageTitle">Overview</h2>
       <div class="tools">
         <button class="sos" data-sos aria-label="Hold for 3 seconds to send SOS"><span class="fill"></span><span class="lbl"><b>SOS</b></span></button>
@@ -445,6 +452,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 <div id="sosModal" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="sosTitle"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>if (!window.L) document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"><script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"><\/script>');</script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 /* =========================================================
@@ -524,7 +532,7 @@ function route() {
   $('#pageTitle').textContent = TITLES[page];
   $('#content').classList.toggle('flush', page === 'track');
   $('#content').scrollTop = 0;
-  if (page === 'track') { initMap(); setTimeout(() => map.invalidateSize(), 60); parts[1] ? openPerson(parts[1]) : closePerson(true); }
+  if (page === 'track') { if (initMap()) setTimeout(() => map.invalidateSize(), 60); parts[1] ? openPerson(parts[1]) : closePerson(true); }
   if (page === 'alerts') renderAlerts();
   if (page === 'profile') { fillProfile(); paintPushState(); }
 }
@@ -622,13 +630,24 @@ $('#readAll').onclick = async () => { await api('/notifications/read-all', { met
 
 /* ======================= TRACK + MAP ======================= */
 let map;
+const TILES = [
+  { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', opt: { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' } },
+  { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opt: { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' } },
+  { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opt: { maxZoom: 19, attribution: 'Tiles &copy; Esri' } },
+];
 function initMap() {
-  if (map) return;
+  if (map) return true;
+  if (!window.L) { $('#map').innerHTML = '<div style="height:100%;display:grid;place-items:center;padding:24px;text-align:center;color:#5B6478">The map could not load. Check your internet and reload the page.<br>Everything else still works.</div>'; return false; }
   map = L.map('map', { zoomControl: true }).setView([18.5913, 73.7389], 12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20, subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  }).addTo(map);
+  let idx = 0, loaded = 0, errors = 0, layer = null;
+  const useTiles = (i) => {
+    if (layer) map.removeLayer(layer);
+    loaded = 0; errors = 0;
+    layer = L.tileLayer(TILES[i].url, TILES[i].opt).addTo(map);
+    layer.on('tileload', () => loaded++);
+    layer.on('tileerror', () => { errors++; if (!loaded && errors >= 4 && idx < TILES.length - 1) { idx++; useTiles(idx); } });
+  };
+  useTiles(0);
   map.on('click', (e) => {
     if ($('#aCenter')?.value !== 'fixed') return;
     S.pickedPlace = { lat: e.latlng.lat, lng: e.latlng.lng };
@@ -637,6 +656,7 @@ function initMap() {
     toast('Place selected. Save the alert to apply.');
   });
   renderPeople();
+  return true;
 }
 const pin = (color, label) => L.divIcon({ className: '', html: `<div style="display:flex;flex-direction:column;align-items:center"><div style="background:${color};color:#fff;font:800 12px 'Hanken Grotesk',sans-serif;padding:3px 8px;border-radius:8px;white-space:nowrap;margin-bottom:3px;box-shadow:0 2px 6px rgba(0,0,0,.25)">${esc(label)}</div><div style="width:16px;height:16px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 2px ${color}"></div></div>`, iconSize: [120, 44], iconAnchor: [60, 40] });
 function clearLayers() { S.layers.forEach((l) => map && map.removeLayer(l)); S.layers = []; S.pickMarker = null; }
@@ -656,19 +676,19 @@ function renderPeople() {
 }
 
 window.openPerson = async (uid, period) => {
-  initMap();
+  const hasMap = initMap();
   const p = S.people.find((x) => x.user_id === uid);
   if (!p) { if (S.people.length || S.loaded) { toast('This person is not sharing with you now'); location.hash = '#/track'; } return; }
   S.selected = uid; period = period || S.period || 'today'; S.period = period;
   const from = period === 'today' ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date(Date.now() - { '1h': 3600e3, '24h': 864e5, '7d': 6048e5 }[period]);
   let h = { points: [], timeline: [] };
   try { h = await api(`/locations/history/${uid}?from=${encodeURIComponent(from.toISOString())}`); } catch (e) { toast(e.message); }
-  clearLayers();
-  if (h.points.length > 1) S.layers.push(L.polyline(h.points.map((q) => [q.lat, q.lng]), { color: '#3B4BA8', weight: 4, opacity: .8 }).addTo(map));
-  h.timeline.filter((t) => t.type === 'stay').forEach((t) => S.layers.push(L.circleMarker([t.lat, t.lng], { radius: 7, color: '#B87414', fillOpacity: .9 }).addTo(map).bindTooltip(`${hhmm(t.from)}–${hhmm(t.to)} · ${t.minutes} min`)));
+  if (hasMap) clearLayers();
+  if (hasMap && h.points.length > 1) S.layers.push(L.polyline(h.points.map((q) => [q.lat, q.lng]), { color: '#3B4BA8', weight: 4, opacity: .8 }).addTo(map));
+  if (hasMap) h.timeline.filter((t) => t.type === 'stay').forEach((t) => S.layers.push(L.circleMarker([t.lat, t.lng], { radius: 7, color: '#B87414', fillOpacity: .9 }).addTo(map).bindTooltip(`${hhmm(t.from)}–${hhmm(t.to)} · ${t.minutes} min`)));
   const c = p.alert_center === 'fixed' && p.alert_lat != null ? [p.alert_lat, p.alert_lng] : S.me ? [S.me.lat, S.me.lng] : null;
-  if (p.alert_enabled && c) S.layers.push(L.circle(c, { radius: p.alert_radius_m, color: '#0F7C7E', weight: 2, fillOpacity: .06 }).addTo(map));
-  if (p.lat != null) map.setView([p.lat, p.lng], 14);
+  if (hasMap && p.alert_enabled && c) S.layers.push(L.circle(c, { radius: p.alert_radius_m, color: '#0F7C7E', weight: 2, fillOpacity: .06 }).addTo(map));
+  if (hasMap && p.lat != null) map.setView([p.lat, p.lng], 14);
   S.pickedPlace = p.alert_lat != null ? { lat: p.alert_lat, lng: p.alert_lng } : null;
   const periods = [['1h', 'Last hour'], ['today', 'Today'], ['24h', '24 hours'], ['7d', '7 days']];
   $('#peopleView').classList.add('hidden'); $('#personView').classList.remove('hidden');
@@ -681,7 +701,7 @@ window.openPerson = async (uid, period) => {
     </div>
     <div class="card" style="margin-top:12px"><h3>Where they've been</h3>
       <div class="chips indigo-chips" style="margin-top:10px">${periods.map(([k, l]) => `<button class="chip" aria-pressed="${k === period}" onclick="openPerson('${uid}','${k}')">${l}</button>`).join('')}</div>
-      <ul class="timeline">${h.timeline.length ? h.timeline.slice().reverse().map((t) => `<li ${t.lat ? `onclick="map.setView([${t.lat},${t.lng}],16)"` : ''}><span class="d" style="background:${t.type === 'stay' ? '#B87414' : '#3B4BA8'}"></span><span><b>${hhmm(t.from)} – ${hhmm(t.to)}</b><br><span class="muted">${t.type === 'stay' ? 'Stayed in one place for ' + t.minutes + ' min' : 'Travelled ' + (t.distanceM / 1000).toFixed(1) + ' km'}</span></span></li>`).join('') : '<li class="muted" style="cursor:default">No movement recorded in this period.</li>'}</ul>
+      <ul class="timeline">${h.timeline.length ? h.timeline.slice().reverse().map((t) => `<li ${t.lat ? `onclick="map && map.setView([${t.lat},${t.lng}],16)"` : ''}><span class="d" style="background:${t.type === 'stay' ? '#B87414' : '#3B4BA8'}"></span><span><b>${hhmm(t.from)} – ${hhmm(t.to)}</b><br><span class="muted">${t.type === 'stay' ? 'Stayed in one place for ' + t.minutes + ' min' : 'Travelled ' + (t.distanceM / 1000).toFixed(1) + ' km'}</span></span></li>`).join('') : '<li class="muted" style="cursor:default">No movement recorded in this period.</li>'}</ul>
     </div>
     <div class="card" style="margin-top:12px"><h3>Nearby alert</h3><p class="sub">Get notified when ${esc(p.full_name.split(' ')[0])} comes within this distance.</p>
       <label class="check" style="margin-top:0"><input type="checkbox" id="aOn" ${p.alert_enabled ? 'checked' : ''}> Alert is on</label>

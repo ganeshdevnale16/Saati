@@ -3,7 +3,7 @@
     "name": "Saathi",
     "slug": "saathi-devnale",
     "owner": "ganesh.devnale16",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
@@ -24,12 +24,16 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Saathi uses your location to share it with people you choose.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Saathi keeps sharing your location with people you chose, even when the app is closed, until the share ends or you stop it.",
-        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
       "package": "com.devnaleglobals.saathi",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F7C7E"
@@ -43,12 +47,7 @@
         "POST_NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
-      ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_ANDROID_KEY"
-        }
-      }
+      ]
     },
     "plugins": [
       [

@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, View, StyleSheet, Switch, Alert, Linking, Pressable } from 'react-native';
-import MapView, { Marker, Polyline, Circle } from 'react-native-maps';
+import LeafletMap from '../components/LeafletMap';
 import { api } from '../api';
 import { getSocket } from '../socket';
 import { C } from '../theme';
@@ -20,7 +20,7 @@ const hhmm = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute
 
 export default function PersonScreen({ route, navigation }) {
   const { userId } = route.params;
-  const map = useRef(null);
+  const [focus, setFocus] = useState(null);
   const [person, setPerson] = useState(null);
   const [period, setPeriod] = useState('live');
   const [hist, setHist] = useState({ points: [], timeline: [] });
@@ -51,14 +51,27 @@ export default function PersonScreen({ route, navigation }) {
       if (p.userId !== userId) return;
       setPerson((x) => x && { ...x, lat: p.lat, lng: p.lng, recorded_at: p.recorded_at, battery: p.battery, speed: p.speed });
       if (period === 'live') setHist((h) => ({ ...h, points: [...h.points, ...p.points] }));
-      if (period === 'live') map.current?.animateCamera({ center: { latitude: p.lat, longitude: p.lng } }, { duration: 600 });
+      if (period === 'live') setFocus({ lat: p.lat, lng: p.lng, n: Date.now() });
     };
     s?.on('location:update', on);
     return () => s?.off('location:update', on);
   }, [userId, period]);
 
-  const line = useMemo(() => hist.points.map((p) => ({ latitude: p.lat, longitude: p.lng })), [hist.points]);
+  const line = useMemo(() => hist.points.map((p) => [p.lat, p.lng]), [hist.points]);
   const center = alert.center === 'fixed' && alert.lat != null ? { latitude: alert.lat, longitude: alert.lng } : myPos ? { latitude: myPos.lat, longitude: myPos.lng } : null;
+
+  const mapData = useMemo(() => {
+    if (!person || person.lat == null) return null;
+    return {
+      markers: [{ lat: person.lat, lng: person.lng, label: person.full_name.split(' ')[0], color: person.sos_active ? C.red : C.indigo }],
+      lines: line.length > 1 ? [line] : [],
+      stops: hist.timeline.filter((t) => t.type === 'stay').map((t) => ({ lat: t.lat, lng: t.lng, label: `${hhmm(t.from)} – ${hhmm(t.to)} · ${t.minutes} min` })),
+      circles: alert.enabled && center ? [{ lat: center.latitude, lng: center.longitude, radius: Number(alert.km || 0) * 1000 }] : [],
+      pins: alert.center === 'fixed' && alert.lat != null ? [{ lat: alert.lat, lng: alert.lng }] : [],
+      focus,
+      zoom: 14,
+    };
+  }, [person, line, hist.timeline, alert, center?.latitude, center?.longitude, focus]);
 
   const saveAlert = async () => {
     try {
@@ -83,16 +96,11 @@ export default function PersonScreen({ route, navigation }) {
       )}
 
       {has ? (
-        <MapView ref={map} style={st.map}
-          initialRegion={{ latitude: person.lat, longitude: person.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
-          onLongPress={(e) => alert.center === 'fixed' && setAlert((a) => ({ ...a, lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude }))}>
-          {line.length > 1 && <Polyline coordinates={line} strokeColor={C.indigo} strokeWidth={4} />}
-          {hist.timeline.filter((t) => t.type === 'stay').map((t, i) => (
-            <Marker key={i} coordinate={{ latitude: t.lat, longitude: t.lng }} pinColor={C.amber} title={`${hhmm(t.from)} – ${hhmm(t.to)}`} description={`Stayed ${t.minutes} min`} />
-          ))}
-          <Marker coordinate={{ latitude: person.lat, longitude: person.lng }} title={person.full_name} description={ago(person.recorded_at)} pinColor={person.sos_active ? C.red : C.indigo} />
-          {alert.enabled && center && <Circle center={center} radius={Number(alert.km || 0) * 1000} strokeColor={C.teal} fillColor="rgba(15,124,126,0.08)" />}
-        </MapView>
+        <LeafletMap
+          style={st.map}
+          data={mapData}
+          onLongPress={(c) => alert.center === 'fixed' && setAlert((a) => ({ ...a, lat: c.latitude, lng: c.longitude }))}
+        />
       ) : <Card><Text style={st.muted}>Waiting for their first location update.</Text></Card>}
 
       <View style={st.meta}>
@@ -115,7 +123,7 @@ export default function PersonScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={st.tlT}>{hhmm(t.from)} – {hhmm(t.to)}</Text>
             <Text style={st.muted}>{t.type === 'stay' ? `Stayed in one place for ${t.minutes} min` : `Travelled ${(t.distanceM / 1000).toFixed(1)} km`}</Text>
-            {t.type === 'stay' && <Pressable onPress={() => map.current?.animateCamera({ center: { latitude: t.lat, longitude: t.lng }, zoom: 16 })}><Text style={st.link}>Show on map</Text></Pressable>}
+            {t.type === 'stay' && <Pressable onPress={() => setFocus({ lat: t.lat, lng: t.lng, zoom: 16, n: Date.now() })}><Text style={st.link}>Show on map</Text></Pressable>}
           </View>
         </View>
       ))}

@@ -203,7 +203,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 <section id="authView" class="auth hidden">
   <div class="auth-art">
     <div>
-      <img src="/logo-96.png" alt="" width="64" height="64" style="border-radius:16px;box-shadow:0 0 0 3px rgba(255,255,255,.35);margin-bottom:18px;display:block">
+      <img src="/logo-96.png" alt="" width="64" height="64" style="border-radius:16px;box-shadow:0 0 0 3px rgba(255,255,255,.35);margin-bottom:18px;display:block" onerror="this.remove()">
       <h1>Saathi</h1>
       <p>Share where you are with people you trust. Ask for help with one hold.</p>
       <a class="getapp" href="/download">Download the app</a>
@@ -270,7 +270,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 <!-- ======================= APP ======================= -->
 <section id="appView" class="shell hidden">
   <aside class="side">
-    <div class="brand" style="display:flex;align-items:center;gap:12px"><img src="/logo-96.png" alt="" width="40" height="40" style="border-radius:10px"><div><b>Saathi</b><span>by Devnale Globals</span></div></div>
+    <div class="brand" style="display:flex;align-items:center;gap:12px"><img src="/logo-96.png" alt="" width="40" height="40" style="border-radius:10px" onerror="this.remove()"><div><b>Saathi</b><span>by Devnale Globals</span></div></div>
     <nav class="nav" aria-label="Main">
       <a href="#/overview" data-nav="overview"><svg class="i" viewBox="0 0 24 24"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg>Overview</a>
       <a href="#/share" data-nav="share"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/></svg>Share location</a>
@@ -288,7 +288,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 
   <div class="main">
     <header class="top">
-      <span class="mobile-brand" style="align-items:center;gap:8px"><img src="/logo-96.png" alt="" width="30" height="30" style="border-radius:8px;vertical-align:middle;margin-right:8px">Saathi</span>
+      <span class="mobile-brand" style="align-items:center;gap:8px"><img src="/logo-96.png" alt="" width="30" height="30" style="border-radius:8px;vertical-align:middle;margin-right:8px" onerror="this.remove()">Saathi</span>
       <h2 id="pageTitle">Overview</h2>
       <div class="tools">
         <button class="sos" data-sos aria-label="Hold for 3 seconds to send SOS"><span class="fill"></span><span class="lbl"><b>SOS</b></span></button>
@@ -630,24 +630,28 @@ $('#readAll').onclick = async () => { await api('/notifications/read-all', { met
 
 /* ======================= TRACK + MAP ======================= */
 let map;
+// Free map tiles, no API key. A custom provider can be set in Render (MAP_TILE_URL).
 const TILES = [
-  { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', opt: { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' } },
-  { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opt: { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' } },
+  { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opt: { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' } },
   { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opt: { maxZoom: 19, attribution: 'Tiles &copy; Esri' } },
 ];
+let tileIdx = 0, tileLayer = null;
+function useTiles(i) {
+  if (!map) return;
+  if (tileLayer) map.removeLayer(tileLayer);
+  let ok = 0, bad = 0;
+  tileLayer = L.tileLayer(TILES[i].url, TILES[i].opt).addTo(map);
+  tileLayer.on('tileload', () => ok++);
+  tileLayer.on('tileerror', () => { bad++; if (!ok && bad >= 4 && tileIdx < TILES.length - 1) { tileIdx++; useTiles(tileIdx); } });
+}
+fetch('/api/app-info').then((r) => r.json()).then((i) => {
+  if (i.map && i.map.tileUrl) { TILES.unshift({ url: i.map.tileUrl, opt: { maxZoom: 19, attribution: i.map.attribution || '' } }); tileIdx = 0; useTiles(0); }
+}).catch(() => {});
 function initMap() {
   if (map) return true;
   if (!window.L) { $('#map').innerHTML = '<div style="height:100%;display:grid;place-items:center;padding:24px;text-align:center;color:#5B6478">The map could not load. Check your internet and reload the page.<br>Everything else still works.</div>'; return false; }
   map = L.map('map', { zoomControl: true }).setView([18.5913, 73.7389], 12);
-  let idx = 0, loaded = 0, errors = 0, layer = null;
-  const useTiles = (i) => {
-    if (layer) map.removeLayer(layer);
-    loaded = 0; errors = 0;
-    layer = L.tileLayer(TILES[i].url, TILES[i].opt).addTo(map);
-    layer.on('tileload', () => loaded++);
-    layer.on('tileerror', () => { errors++; if (!loaded && errors >= 4 && idx < TILES.length - 1) { idx++; useTiles(idx); } });
-  };
-  useTiles(0);
+  useTiles(tileIdx);
   map.on('click', (e) => {
     if ($('#aCenter')?.value !== 'fixed') return;
     S.pickedPlace = { lat: e.latlng.lat, lng: e.latlng.lng };

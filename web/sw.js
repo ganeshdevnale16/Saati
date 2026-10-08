@@ -10,6 +10,8 @@ self.addEventListener('push', (event) => {
   const sos = data.type === 'sos';
   event.waitUntil(self.registration.showNotification(p.title || 'Saathi', {
     body: p.body || '',
+    icon: '/icon-192.png',
+    badge: '/favicon-32.png',
     data,
     tag: sos ? 'sos-' + (data.sosId || Date.now()) : (data.type || 'saathi'),
     renotify: true,

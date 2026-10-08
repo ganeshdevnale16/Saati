@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { API_URL } from '../config';
 
 const HTML = `<!doctype html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -19,8 +20,7 @@ if (!window.L) { document.getElementById('err').style.display='flex'; post({type
 else {
   var map = L.map('m', { zoomControl: true }).setView([18.5913, 73.7389], 12);
   var TILES = [
-    ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' }],
-    ['https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }],
+    ['https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }],
     ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '&copy; Esri' }]
   ];
   var ti = 0, tl = null, ok = 0, bad = 0;
@@ -28,6 +28,7 @@ else {
     tl.on('tileload', function(){ ok++; });
     tl.on('tileerror', function(){ bad++; if (!ok && bad >= 4 && ti < TILES.length - 1) { ti++; useTiles(ti); } }); }
   useTiles(0);
+  window.setTiles = function(url, attribution){ TILES.unshift([url, { maxZoom: 19, attribution: attribution || '' }]); ti = 0; useTiles(0); };
   var layer = L.layerGroup().addTo(map), fitted = false;
   function pin(color, label){
     return L.divIcon({ className: '', iconSize: [120, 44], iconAnchor: [60, 40],
@@ -62,6 +63,14 @@ export default function LeafletMap({ data, onMarkerPress, onLongPress, style }) 
     ref.current?.injectJavaScript(`window.render && window.render(${JSON.stringify(data)}); true;`);
   }, [ready, data]);
 
+  // Optional custom map provider set in Render (MAP_TILE_URL)
+  useEffect(() => {
+    if (!ready) return;
+    fetch(API_URL + '/api/app-info').then((r) => r.json()).then((i) => {
+      if (i.map && i.map.tileUrl) ref.current?.injectJavaScript(`window.setTiles(${JSON.stringify(i.map.tileUrl)}, ${JSON.stringify(i.map.attribution || '')}); true;`);
+    }).catch(() => {});
+  }, [ready]);
+
   const onMessage = (e) => {
     try {
       const m = JSON.parse(e.nativeEvent.data);
@@ -76,7 +85,7 @@ export default function LeafletMap({ data, onMarkerPress, onLongPress, style }) 
       <WebView
         ref={ref}
         originWhitelist={['*']}
-        source={{ html: HTML, baseUrl: 'https://saathi.app/' }}
+        source={{ html: HTML, baseUrl: API_URL + '/' }}
         onMessage={onMessage}
         javaScriptEnabled
         domStorageEnabled

@@ -30,6 +30,7 @@ app.use('/api/locations', requireAuth, require('./routes/locations'));
 app.use('/api/sos', requireAuth, require('./routes/sos'));
 app.use('/api/notifications', requireAuth, require('./routes/notifications'));
 app.use('/api/push', require('./routes/push'));
+app.use('/api/admin', require('./routes/admin'));
 
 // ---------- App download ----------
 const fs = require('fs');
@@ -43,9 +44,10 @@ app.get('/api/app-info', (req, res) => {
   let size = d.sizeMb;
   if (!size && !d.apkUrl && hasApk) size = (fs.statSync(LOCAL_APK).size / 1048576).toFixed(1);
   res.json({
-    app: config.brand.app, company: config.brand.company, version: d.version,
+    app: config.brand.app, company: config.brand.company, version: d.version, minVersion: d.minVersion || null, notes: d.notes || null,
     android: { available: hasApk, url: '/download/android', sizeMb: size || null, playStoreUrl: d.playStoreUrl || null },
     ios: { available: Boolean(d.iosUrl), url: d.iosUrl || null },
+    map: config.map.tileUrl ? config.map : null,
   });
 });
 

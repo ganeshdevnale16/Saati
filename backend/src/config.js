@@ -12,6 +12,9 @@ module.exports = {
   autoMigrate: process.env.AUTO_MIGRATE !== 'false',
   retentionDays: Number(process.env.LOCATION_RETENTION_DAYS || 90),
   brand: { app: 'Saathi', company: 'Devnale Globals' },
+  adminKey: process.env.ADMIN_KEY || '',
+  // Optional: switch map provider without code changes (e.g. MapTiler with your key)
+  map: { tileUrl: process.env.MAP_TILE_URL || '', attribution: process.env.MAP_ATTRIBUTION || '' },
   // App download settings (change in Render > Environment, no code change needed)
   download: {
     apkUrl: process.env.APK_URL || '',              // e.g. GitHub Release asset link. Empty = serve web/downloads/saathi.apk
@@ -19,5 +22,7 @@ module.exports = {
     sizeMb: process.env.APK_SIZE_MB || '',
     iosUrl: process.env.IOS_URL || '',              // App Store / TestFlight link when ready
     playStoreUrl: process.env.PLAY_STORE_URL || '', // when published on Play Store
+    minVersion: process.env.APP_MIN_VERSION || '',   // apps older than this must update
+    notes: process.env.APP_RELEASE_NOTES || '',      // shown in the app's update banner
   },
 };

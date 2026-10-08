@@ -13,12 +13,12 @@
 html,body{height:100%;margin:0}
 body{font-family:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--paper);font-size:16px;line-height:1.45}
 button,input,select{font:inherit}
-.hidden{display:none!important}
+.hidden,[hidden]{display:none!important}
 :focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
 
 /* auth */
 .auth{min-height:100%;display:grid;grid-template-columns:1fr minmax(360px,520px)}
-.auth-art{position:sticky;top:0;height:100vh;background:var(--teal);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.auth-art{position:sticky;top:0;height:100vh;align-self:start;background:var(--teal);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .auth-art h1{font-size:clamp(56px,8vw,112px);line-height:.9;margin:0;font-weight:900;letter-spacing:-.04em}
 .auth-art p{font-size:22px;max-width:30ch;margin:18px 0 0}
 .rings{position:absolute;right:-120px;bottom:-120px;width:520px;height:520px;border-radius:50%;border:2px solid rgba(255,255,255,.25);box-shadow:0 0 0 70px rgba(255,255,255,.06),0 0 0 140px rgba(255,255,255,.04)}
@@ -41,6 +41,7 @@ h3{font-size:18px;margin:18px 0 10px}
 .check{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:15px;color:var(--ink)}
 .check input{width:20px;height:20px;margin-top:2px;accent-color:var(--teal)}
 .link{background:none;border:0;color:var(--teal);font-weight:700;cursor:pointer;padding:6px 0}
+.info{background:var(--teal-soft);color:var(--ink);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-weight:600}
 .err{background:var(--red-soft);color:var(--red);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-weight:600}
 .footer{text-align:center;color:var(--slate);font-size:12px;padding:18px 0}
 
@@ -115,6 +116,7 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:12px 20
       <button role="tab" aria-selected="false" data-auth="register">Create account</button>
     </div>
     <div id="authErr" class="err hidden"></div>
+    <div id="authInfo" class="info hidden"></div>
 
     <form id="loginForm">
       <div class="field"><label for="lId">Mobile number or email</label><input id="lId" required autocomplete="username" placeholder="98765 43210"></div>
@@ -262,9 +264,10 @@ function showAuth(mode) {
   $('#loginForm').classList.toggle('hidden', mode !== 'login');
   $('#regForm').classList.toggle('hidden', mode !== 'register');
   $('#resetForm').classList.toggle('hidden', mode !== 'reset');
-  $('#authErr').classList.add('hidden');
+  $('#authErr').classList.add('hidden'); $('#authInfo').classList.add('hidden');
 }
 document.querySelectorAll('[data-auth]').forEach((b) => b.onclick = () => showAuth(b.dataset.auth));
+const authInfo = (m) => { $('#authInfo').textContent = m; $('#authInfo').classList.remove('hidden'); };
 const authErr = (e) => { $('#authErr').textContent = e.message; $('#authErr').classList.remove('hidden'); };
 function setSession(r) { S.token = r.token; S.user = r.user; try { localStorage.setItem('saathi_token', r.token); localStorage.setItem('saathi_user', JSON.stringify(r.user)); } catch {} boot(); }
 
@@ -272,7 +275,9 @@ $('#loginForm').onsubmit = async (e) => { e.preventDefault(); try { setSession(a
 $('#rSendOtp').onclick = async () => {
   try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#rMobile').value, purpose: 'register' } });
     $('#rOtpRow').classList.add('hidden'); $('#rOtpField').classList.remove('hidden'); $('#rMobile').readOnly = true; $('#rSubmit').disabled = false;
-    toast(r.devCode ? 'Test mode code: ' + r.devCode : 'Code sent to your mobile'); } catch (x) { authErr(x); }
+    $('#authErr').classList.add('hidden');
+    if (r.devCode) { $('#rOtp').value = r.devCode; authInfo('Test mode: your code ' + r.devCode + ' is filled in for you. Complete the form and create your account.'); }
+    else authInfo('We sent a 6-digit code to your mobile.'); } catch (x) { authErr(x); }
 };
 $('#regForm').onsubmit = async (e) => {
   e.preventDefault();
@@ -284,7 +289,7 @@ $('#regForm').onsubmit = async (e) => {
       dob: $('#rDob').value, gender: $('#rGender').value || undefined, city: $('#rCity').value, emergencyName: $('#rEName').value, emergencyMobile: $('#rEMobile').value, consent: true } }));
   } catch (x) { authErr(x); }
 };
-$('#xSend').onclick = async () => { try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#xMobile').value, purpose: 'reset' } }); $('#xRest').classList.remove('hidden'); toast(r.devCode ? 'Test mode code: ' + r.devCode : 'Code sent'); } catch (x) { authErr(x); } };
+$('#xSend').onclick = async () => { try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#xMobile').value, purpose: 'reset' } }); $('#xRest').classList.remove('hidden'); if (r.devCode) { $('#xOtp').value = r.devCode; authInfo('Test mode: your code ' + r.devCode + ' is filled in.'); } else authInfo('We sent a 6-digit code to your mobile.'); } catch (x) { authErr(x); } };
 $('#resetForm').onsubmit = async (e) => { e.preventDefault(); try { await api('/auth/reset', { method: 'POST', body: { mobile: $('#xMobile').value, otp: $('#xOtp').value, password: $('#xPw').value } }); toast('Password updated. Sign in now.'); showAuth('login'); } catch (x) { authErr(x); } };
 
 function logout() { stopWebShare(); try { localStorage.removeItem('saathi_token'); localStorage.removeItem('saathi_user'); } catch {} S.token = null; S.user = null; S.socket?.disconnect(); location.reload(); }

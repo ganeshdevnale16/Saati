@@ -10,13 +10,15 @@ import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
 import * as Haptics from 'expo-haptics';
 import Constants from 'expo-constants';
+import * as Location from 'expo-location';
 
 import { API_URL } from './src/config';
-import { saveSession, clearSession } from './src/session';
+import { saveSession, clearSession, getToken } from './src/session';
 import { registerPush } from './src/push';
 import { watchConnectivity, flush, pendingCount } from './src/location/queue';
 import { syncSharingState, startBackgroundSharing, stopBackgroundSharing } from './src/location/control';
 import { C } from './src/theme';
+import { showAlert, markAllSeen } from './src/alerts';
 
 const APP_INFO = { version: Constants.expoConfig?.version || '0.0.0', platform: Platform.OS };
 const START_URL = API_URL + '/';
@@ -79,7 +81,11 @@ export default function App() {
     let m; try { m = JSON.parse(e.nativeEvent.data); } catch { return; }
     switch (m.type) {
       case 'auth':
-        if (m.token) { await saveSession(m.token, m.user || {}); registerPush().catch(() => {}); flush(); }
+        if (m.token) {
+          const first = !(await getToken());
+          await saveSession(m.token, m.user || {}); registerPush().catch(() => {}); flush();
+          if (first) markAllSeen();
+        }
         break;
       case 'logout':
         await stopBackgroundSharing(); await clearSession();
@@ -99,6 +105,21 @@ export default function App() {
         if (!r.ok) Alert.alert('Location permission needed', r.reason, [{ text: 'Not now' }, { text: 'Open settings', onPress: () => Linking.openSettings() }]);
         break;
       }
+      case 'getLocation': {
+        try {
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') status = (await Location.requestForegroundPermissionsAsync()).status;
+          if (status !== 'granted') { js('window.onNativeLocation && window.onNativeLocation(null)'); break; }
+          const last = await Location.getLastKnownPositionAsync({ maxAge: 60000 });
+          if (last) js(`window.onNativeLocation && window.onNativeLocation(${JSON.stringify({ lat: last.coords.latitude, lng: last.coords.longitude, accuracy: last.coords.accuracy })})`);
+          const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+          js(`window.onNativeLocation && window.onNativeLocation(${JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy })})`);
+        } catch { js('window.onNativeLocation && window.onNativeLocation(null)'); }
+        break;
+      }
+      case 'notify':
+        showAlert(m.n).catch(() => {});
+        break;
       case 'haptic':
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
         break;

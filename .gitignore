@@ -5,3 +5,6 @@ dist/
 *.log
 android/
 ios/
+
+# Firebase service account keys: never commit
+*firebase-adminsdk*.json

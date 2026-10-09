@@ -2,6 +2,7 @@
 import * as TaskManager from 'expo-task-manager';
 import * as Battery from 'expo-battery';
 import { enqueue, flush } from './queue';
+import { pollAlerts } from '../alerts';
 
 export const LOCATION_TASK = 'saathi-background-location';
 
@@ -23,4 +24,5 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
   }));
   await enqueue(points);   // 1) always save on device first
   await flush();           // 2) then try to upload (no-op if offline)
+  await pollAlerts();      // 3) show any new Saathi alerts in the notification bar
 });

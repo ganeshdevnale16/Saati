@@ -170,6 +170,18 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
 .sosmodal .btn{background:#fff;color:var(--red);border-color:#fff;font-size:17px}
 .sosmodal .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
 
+.cols>*,.stack>*,.grid2>*{min-width:0}
+.note{padding:12px 0;border-top:1px solid var(--line)}
+.note:first-child{border-top:0}
+.note .meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.note .meta .t{margin-left:auto;font-size:12.5px;color:var(--slate);white-space:nowrap}
+.note b{display:block;overflow-wrap:anywhere}
+.note p{margin:2px 0 0;color:var(--slate);font-size:14.5px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note .act{display:inline-block;margin-top:6px;font-weight:700;font-size:14px}
+.note.unread b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:7px;vertical-align:2px}
+.me-dot{width:18px;height:18px;border-radius:50%;background:#1A73E8;border:3px solid #fff;box-shadow:0 0 0 2px rgba(26,115,232,.35),0 0 0 10px rgba(26,115,232,.12)}
+.locate-btn{background:#fff;border:0;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.3);color:#1A73E8}
+.locate-btn svg{width:22px;height:22px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;z-index:9999;max-width:92vw;box-shadow:0 8px 24px rgba(0,0,0,.2)}
 .bottomnav{display:none}
 
@@ -352,7 +364,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
         <div class="trackwrap">
           <div class="track-list">
             <div id="peopleView">
-              <h3 style="margin:0 0 10px">People you can see</h3>
+              <div class="row" style="margin-bottom:10px"><h3 style="margin:0">People you can see</h3><button class="btn ghost sm" onclick="locateMe(true)">My location</button></div>
               <div id="peopleList"></div>
               <div class="card" style="margin-top:16px">
                 <h3>Ask to see someone's location</h3>
@@ -429,6 +441,7 @@ input[readonly]{background:#EEF2F0;color:var(--slate)}
               <p class="sub" id="pushState">Checking…</p>
               <div class="row" style="justify-content:flex-start">
                 <button class="btn sm" id="pushOn">Turn on alerts</button>
+                <button class="btn danger sm hidden" id="pushOff">Turn off alerts on this device</button>
                 <button class="btn ghost sm" id="pushTest">Send test alert</button>
               </div>
             </div>
@@ -526,7 +539,7 @@ $('#regForm').onsubmit = async (e) => {
 $('#xSend').onclick = async () => { try { const r = await api('/auth/otp', { method: 'POST', body: { mobile: $('#xMobile').value, purpose: 'reset' } }); $('#xRest').classList.remove('hidden'); if (r.devCode) { $('#xOtp').value = r.devCode; authInfo('Test mode: code ' + r.devCode + ' is filled in.'); } else authInfo('We sent a code to your mobile.'); } catch (x) { authErr(x); } };
 $('#resetForm').onsubmit = async (e) => { e.preventDefault(); try { await api('/auth/reset', { method: 'POST', body: { mobile: $('#xMobile').value, otp: $('#xOtp').value, password: $('#xPw').value } }); showAuth('login'); authInfo('Password updated. Sign in with your new password.'); } catch (x) { authErr(x); } };
 
-function logout() { toNative({ type: 'logout' }); stopWebShare(); try { localStorage.removeItem('saathi_token'); localStorage.removeItem('saathi_user'); } catch {} S.token = null; S.user = null; S.socket?.disconnect(); location.hash = ''; location.reload(); }
+async function logout() { toNative({ type: 'logout' }); if (!APP && pushSupported()) await disablePush(true); stopWebShare(); try { localStorage.removeItem('saathi_token'); localStorage.removeItem('saathi_user'); } catch {} S.token = null; S.user = null; S.socket?.disconnect(); location.hash = ''; location.reload(); }
 $('#logout').onclick = logout;
 
 /* ======================= ROUTER ======================= */
@@ -538,9 +551,10 @@ function route() {
   $$('[data-nav]').forEach((a) => { if (a.dataset.nav === page) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[page];
   $('#content').classList.toggle('flush', page === 'track');
+  if (page !== 'track') stopMeWatch();
   $('#content').scrollTop = 0;
-  if (page === 'track') { if (initMap()) setTimeout(() => map.invalidateSize(), 60); parts[1] ? openPerson(parts[1]) : closePerson(true); }
-  if (page === 'alerts') renderAlerts();
+  if (page === 'track') { if (initMap()) { setTimeout(() => map.invalidateSize(), 60); startMeWatch(); } parts[1] ? openPerson(parts[1]) : closePerson(true); }
+  if (page === 'alerts') { renderAlerts(); setTimeout(() => { if (location.hash.startsWith('#/alerts') && S.notes.some((n) => !n.read_at)) $('#readAll').click(); }, 2500); }
   if (page === 'profile') { fillProfile(); paintPushState(); }
 }
 window.addEventListener('hashchange', route);
@@ -579,7 +593,16 @@ function renderOverview() {
   $('#recent').innerHTML = S.notes.length ? S.notes.slice(0, 6).map(noteRow).join('') : '<p class="empty">No activity yet. Share your location or send a request to get started.</p>';
   renderPushPrompt();
 }
-const noteRow = (n) => `<div class="list-item"><span class="pill ${n.type === 'sos' ? 'red' : n.type.startsWith('proximity') ? 'indigo' : n.type === 'share_request' ? 'amber' : ''}">${{ sos: 'SOS', share_request: 'Request', proximity_enter: 'Nearby', proximity_exit: 'Moved away', share_started: 'Sharing', share_approved: 'Approved', share_stopped: 'Stopped', share_expired: 'Ended', share_rejected: 'Declined', sos_resolved: 'Safe', test: 'Test' }[n.type] || 'Info'}</span><div class="grow"><b>${esc(n.title)}</b><span class="muted">${esc(n.body || '')}</span></div><span class="muted" style="white-space:nowrap">${ago(n.created_at)}</span></div>`;
+const NOTE_LABEL = { sos: 'SOS', share_request: 'Request', proximity_enter: 'Nearby', proximity_exit: 'Moved away', share_started: 'Sharing', share_approved: 'Approved', share_stopped: 'Stopped', share_expired: 'Ended', share_rejected: 'Declined', sos_resolved: 'Safe', test: 'Test', announcement: 'Saathi' };
+const noteRow = (n) => {
+  const d = n.data || {};
+  const body = String(n.body || '').replace(/\s*https?:\/\/\S+/g, '').trim();
+  const cls = n.type === 'sos' ? 'red' : String(n.type).startsWith('proximity') ? 'indigo' : n.type === 'share_request' ? 'amber' : '';
+  const act = n.type === 'sos' && d.userId ? `<a class="act" href="#/track/${esc(d.userId)}">See location</a>${d.mobile ? ` · <a class="act" href="tel:${esc(d.mobile)}">Call</a>` : ''}`
+    : n.type === 'share_request' ? '<a class="act" href="#/requests">Review</a>'
+    : d.userId ? `<a class="act" href="#/track/${esc(d.userId)}">Open</a>` : '';
+  return `<div class="note ${n.read_at ? '' : 'unread'}"><div class="meta"><span class="pill ${cls}">${NOTE_LABEL[n.type] || 'Info'}</span><span class="t">${ago(n.created_at)}</span></div><b>${esc(n.title)}</b>${body ? `<p>${esc(body)}</p>` : ''}${act}</div>`;
+};
 
 /* ---------- share ---------- */
 function chips(el, customEl, initial) {
@@ -635,6 +658,39 @@ function renderAlerts() {
 }
 $('#readAll').onclick = async () => { await api('/notifications/read-all', { method: 'POST' }); S.notes.forEach((n) => n.read_at = n.read_at || new Date().toISOString()); renderBadges(); renderOverview(); toast('All alerts marked as read'); };
 
+/* ======================= MY LOCATION ======================= */
+const pendingLoc = [];
+window.onNativeLocation = (p) => { if (p && p.lat != null) { S.me = p; drawMe(); } const r = pendingLoc.splice(0); r.forEach((f) => f(p)); };
+function getMyPosition(timeout = 12000) {
+  return new Promise((resolve) => {
+    let done = false; const finish = (p) => { if (!done) { done = true; resolve(p && p.lat != null ? p : null); } };
+    setTimeout(() => finish(null), timeout + 1000);
+    if (APP) { pendingLoc.push(finish); toNative({ type: 'getLocation' }); return; }
+    if (!navigator.geolocation) return finish(null);
+    navigator.geolocation.getCurrentPosition((p) => finish({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      (e) => { if (e.code === 1) toast('Location is blocked. Allow location for Saathi to see where you are.'); finish(null); },
+      { enableHighAccuracy: true, timeout, maximumAge: 15000 });
+  });
+}
+let meMarker = null, meCircle = null, meTimer = null;
+function drawMe() {
+  if (!map || !S.me) return;
+  const ll = [S.me.lat, S.me.lng];
+  if (!meMarker) {
+    meMarker = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="me-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 1000 }).addTo(map).bindTooltip('You', { direction: 'top', offset: [0, -10] });
+    meCircle = L.circle(ll, { radius: Math.min(S.me.accuracy || 30, 500), color: '#1A73E8', weight: 1, fillOpacity: .08 }).addTo(map);
+  } else { meMarker.setLatLng(ll); meCircle.setLatLng(ll).setRadius(Math.min(S.me.accuracy || 30, 500)); }
+}
+async function locateMe(center) {
+  const p = await getMyPosition();
+  if (!p) { if (center) toast('Could not get your location. Turn on GPS and allow location for Saathi.'); return null; }
+  S.me = p; drawMe();
+  if (center && map) map.setView([p.lat, p.lng], Math.max(map.getZoom(), 15));
+  return p;
+}
+function startMeWatch() { stopMeWatch(); locateMe(!S.people.some((x) => x.lat != null)); meTimer = setInterval(() => locateMe(false), 20000); }
+function stopMeWatch() { if (meTimer) clearInterval(meTimer); meTimer = null; }
+
 /* ======================= TRACK + MAP ======================= */
 let map;
 // Free map tiles, no API key. A custom provider can be set in Render (MAP_TILE_URL).
@@ -659,6 +715,12 @@ function initMap() {
   if (!window.L) { $('#map').innerHTML = '<div style="height:100%;display:grid;place-items:center;padding:24px;text-align:center;color:#5B6478">The map could not load. Check your internet and reload the page.<br>Everything else still works.</div>'; return false; }
   map = L.map('map', { zoomControl: true }).setView([18.5913, 73.7389], 12);
   useTiles(tileIdx);
+  const Locate = L.Control.extend({ options: { position: 'bottomright' }, onAdd() {
+    const b = L.DomUtil.create('button', 'locate-btn'); b.type = 'button'; b.title = 'Show my location'; b.setAttribute('aria-label', 'Show my location');
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+    L.DomEvent.disableClickPropagation(b); b.onclick = () => locateMe(true); return b; } });
+  map.addControl(new Locate());
+  drawMe();
   map.on('click', (e) => {
     if ($('#aCenter')?.value !== 'fixed') return;
     S.pickedPlace = { lat: e.latlng.lat, lng: e.latlng.lng };
@@ -699,7 +761,7 @@ window.openPerson = async (uid, period) => {
   if (hasMap) h.timeline.filter((t) => t.type === 'stay').forEach((t) => S.layers.push(L.circleMarker([t.lat, t.lng], { radius: 7, color: '#B87414', fillOpacity: .9 }).addTo(map).bindTooltip(`${hhmm(t.from)}–${hhmm(t.to)} · ${t.minutes} min`)));
   const c = p.alert_center === 'fixed' && p.alert_lat != null ? [p.alert_lat, p.alert_lng] : S.me ? [S.me.lat, S.me.lng] : null;
   if (hasMap && p.alert_enabled && c) S.layers.push(L.circle(c, { radius: p.alert_radius_m, color: '#0F7C7E', weight: 2, fillOpacity: .06 }).addTo(map));
-  if (hasMap && p.lat != null) map.setView([p.lat, p.lng], 14);
+  if (hasMap && p.lat != null) { if (S.me) map.fitBounds([[p.lat, p.lng], [S.me.lat, S.me.lng]], { padding: [60, 60], maxZoom: 15 }); else map.setView([p.lat, p.lng], 14); }
   S.pickedPlace = p.alert_lat != null ? { lat: p.alert_lat, lng: p.alert_lng } : null;
   const periods = [['1h', 'Last hour'], ['today', 'Today'], ['24h', '24 hours'], ['7d', '7 days']];
   $('#peopleView').classList.add('hidden'); $('#personView').classList.remove('hidden');
@@ -796,7 +858,20 @@ async function subscribePush() {
   if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(key) });
   await api('/push/subscribe', { method: 'POST', body: sub.toJSON() });
 }
+async function disablePush(silent) {
+  try {
+    const reg = swReg || (navigator.serviceWorker && await navigator.serviceWorker.getRegistration());
+    const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) {
+      if (S.token) await api('/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint }, noLogout: true }).catch(() => {});
+      await sub.unsubscribe();
+    }
+    try { localStorage.setItem('saathi_push_off', '1'); } catch {}
+    if (!silent) { toast('Alerts are off for this device'); paintPushState(); }
+  } catch (e) { if (!silent) toast(e.message); }
+}
 async function enablePush() {
+  try { localStorage.removeItem('saathi_push_off'); } catch {}
   try {
     if (!pushSupported()) throw new Error('This browser does not support alerts. Install the Saathi app instead.');
     const perm = await Notification.requestPermission();
@@ -806,17 +881,22 @@ async function enablePush() {
 }
 function renderPushPrompt() {
   let dismissed = false; try { dismissed = !!localStorage.getItem('saathi_push_dismissed'); } catch {}
-  const show = pushSupported() && Notification.permission !== 'granted' && !dismissed;
+  let off = false; try { off = !!localStorage.getItem('saathi_push_off'); } catch {}
+  const show = pushSupported() && Notification.permission !== 'granted' && !dismissed && !off;
   $('#pushPrompt').innerHTML = show ? `<div class="prompt"><svg class="i" viewBox="0 0 24 24" style="color:var(--amber);width:26px;height:26px"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg><div class="grow"><b>Turn on alerts</b><span class="muted">Get SOS and nearby alerts on this computer, even when Saathi is closed.</span></div><button class="btn sm" onclick="enablePush()">Turn on</button><button class="link" onclick="try{localStorage.setItem('saathi_push_dismissed','1')}catch{};renderPushPrompt()">Later</button></div>` : '';
 }
 function paintPushState() {
   if (APP) { $('#pushState').textContent = 'Alerts arrive as phone notifications. Allow notifications for Saathi in your phone settings.'; $('#pushOn').classList.add('hidden'); return; }
   if (!pushSupported()) { $('#pushState').textContent = 'This browser does not support alerts. Use the Saathi app.'; $('#pushOn').disabled = true; return; }
   const p = Notification.permission;
+  let off = false; try { off = !!localStorage.getItem('saathi_push_off'); } catch {}
+  if (p === 'granted' && off) { $('#pushState').textContent = 'Alerts are off for this device.'; $('#pushOn').classList.remove('hidden'); $('#pushOff').classList.add('hidden'); return; }
+  $('#pushOff').classList.toggle('hidden', p !== 'granted');
   $('#pushState').textContent = p === 'granted' ? 'Alerts are on. SOS alerts stay on screen until you open them.' : p === 'denied' ? 'Alerts are blocked in this browser. Click the lock icon in the address bar → Notifications → Allow, then reload.' : 'Alerts are off. Turn them on to get SOS alerts even when this tab is closed.';
   $('#pushOn').classList.toggle('hidden', p === 'granted');
 }
 $('#pushOn').onclick = enablePush;
+$('#pushOff').onclick = () => disablePush(false);
 $('#pushTest').onclick = async () => { try { await api('/push/test', { method: 'POST' }); toast('Test alert sent'); } catch (e) { toast(e.message); } };
 
 /* ---------- SOS: incoming modal with sound ---------- */
@@ -833,7 +913,7 @@ function playAlarm() {
 function showSosModal(e) {
   toNative({ type: 'sosAlert' });
   $('#sosModal').innerHTML = `<div class="sosmodal"><h2 id="sosTitle">${esc(e.full_name)} needs help</h2><p>SOS sent ${ago(e.created_at)}.${e.message ? ' “' + esc(e.message) + '”' : ''}</p>
-    <div class="btns"><a class="btn" href="tel:${esc(e.mobile)}">Call ${esc(e.mobile)}</a><a class="btn" href="#/track/${e.user_id}" onclick="closeSos()">See location</a><button class="btn ghost" onclick="closeSos()">Dismiss</button></div></div>`;
+    <div class="btns"><a class="btn" href="tel:${esc(e.mobile)}">Call ${esc(e.mobile)}</a><a class="btn" href="#/track/${e.user_id}" onclick="closeSos()">See location</a>${e.lat != null ? `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lng}" target="_blank" rel="noopener">Directions</a>` : ''}<button class="btn ghost" onclick="closeSos()">Dismiss</button></div></div>`;
   $('#sosModal').classList.remove('hidden'); playAlarm();
   if (document.hidden && 'Notification' in window && Notification.permission === 'granted' && !swReg) new Notification('SOS from ' + e.full_name, { body: 'Tap to see their location', requireInteraction: true });
 }
@@ -852,7 +932,8 @@ $$('[data-sos]').forEach((b) => {
 });
 async function sendSos(fill) {
   toNative({ type: 'haptic' });
-  const pos = await new Promise((res) => navigator.geolocation ? navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res({}), { timeout: 6000 }) : res({}));
+  const me = await getMyPosition(6000);
+  const pos = me ? { lat: me.lat, lng: me.lng } : {};
   try {
     const r = await api('/sos', { method: 'POST', body: { ...pos, message: 'I need help.' } });
     toast(r.notified ? `SOS sent. ${r.notified} ${r.notified === 1 ? 'person was' : 'people were'} alerted.` : 'SOS saved, but no one is connected to you yet. Add an emergency contact who uses Saathi, or share your location with someone.');
@@ -906,7 +987,7 @@ function connectSocket() {
     Object.assign(p, { lat: u.lat, lng: u.lng, recorded_at: u.recorded_at, battery: u.battery });
     const m = S.markers[u.userId]; if (m) m.setLatLng([u.lat, u.lng]); else renderPeople();
   });
-  S.socket.on('notification', (n) => { if (n.type !== 'sos') toast(n.title); loadAll().catch(() => {}); });
+  S.socket.on('notification', (n) => { toNative({ type: 'notify', n }); if (n.type !== 'sos') toast(n.title); loadAll().catch(() => {}); });
   S.socket.on('shares:changed', () => loadAll().catch(() => {}));
 }
 
@@ -934,7 +1015,7 @@ function boot() {
   $('#authView').classList.add('hidden'); $('#appView').classList.remove('hidden');
   paintUser(); route();
   if (APP) { toNative({ type: 'auth', token: S.token, user: S.user }); checkAppUpdate(); toNative({ type: 'status' }); }
-  if (!APP) registerSW().then(() => { if (pushSupported() && Notification.permission === 'granted') subscribePush().catch(() => {}); });
+  if (!APP) registerSW().then(() => { let off = false; try { off = !!localStorage.getItem('saathi_push_off'); } catch {} if (pushSupported() && Notification.permission === 'granted' && !off) subscribePush().catch(() => {}); });
   connectSocket();
   api('/auth/me').then((r) => { saveUser(r.user); renderOverview(); }).catch(() => {});
   loadAll().then(() => { S.loaded = true; const m = location.hash.match(/^#\/track\/(.+)$/); if (m) openPerson(m[1]); }).catch((e) => toast(e.message));

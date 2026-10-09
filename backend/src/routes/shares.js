@@ -13,6 +13,7 @@ const durationSchema = {
   durationMinutes: z.number().int().positive().optional(),
 };
 const LABEL = { '1h': '1 hour', '1d': '1 day', '1w': '1 week', '1m': '1 month', until_cancel: 'until stopped' };
+const forText = (d, m) => (d === 'until_cancel' ? 'until they stop sharing' : 'for ' + label(d, m));
 const label = (d, m) => LABEL[d] || (m >= 1440 ? `${Math.round(m / 1440)} days` : m >= 60 ? `${Math.round(m / 60)} hours` : `${m} minutes`);
 
 async function findTarget(to, myId) {
@@ -62,7 +63,7 @@ router.post('/offer', wrap(async (req, res) => {
     [req.user.id, user?.id || null, contact.mobile || null, contact.email || null, b.duration, b.durationMinutes || null, b.note || null, expires]);
   const me = await one('SELECT full_name FROM users WHERE id=$1', [req.user.id]);
   if (user) {
-    await notify(user.id, { type: 'share_started', title: `${me.full_name} is sharing their location`, body: `You can see them for ${label(b.duration, b.durationMinutes)}.`, data: { shareId: share.id } });
+    await notify(user.id, { type: 'share_started', title: `${me.full_name} is sharing their location`, body: `You can see them ${forText(b.duration, b.durationMinutes)}.`, data: { shareId: share.id } });
   }
   audit(req, 'share_offer', { shareId: share.id, to: contact });
   res.status(201).json({ share, invited: !user });
@@ -83,7 +84,7 @@ router.post('/request', wrap(async (req, res) => {
     [user?.id || null, req.user.id, contact.mobile || null, contact.email || null, b.duration, b.durationMinutes || null, b.note || null]);
   const me = await one('SELECT full_name, mobile FROM users WHERE id=$1', [req.user.id]);
   if (user) {
-    await notify(user.id, { type: 'share_request', title: `${me.full_name} wants to see your location`, body: `For ${label(b.duration, b.durationMinutes)}${b.note ? ` - "${b.note}"` : ''}. Approve or decline in Requests.`, data: { shareId: share.id } });
+    await notify(user.id, { type: 'share_request', title: `${me.full_name} wants to see your location`, body: `${b.duration === 'until_cancel' ? 'Until you stop sharing' : 'For ' + label(b.duration, b.durationMinutes)}${b.note ? ` - "${b.note}"` : ''}. Approve or decline in Requests.`, data: { shareId: share.id } });
   }
   audit(req, 'share_request', { shareId: share.id, to: contact });
   res.status(201).json({ share, invited: !user });
@@ -106,7 +107,7 @@ router.post('/:id/approve', wrap(async (req, res) => {
     `UPDATE shares SET status='active', duration=$2, duration_minutes=$3, starts_at=now(), expires_at=$4, updated_at=now() WHERE id=$1 RETURNING *`,
     [s.id, duration, mins || null, computeExpiry(duration, mins)]);
   const me = await one('SELECT full_name FROM users WHERE id=$1', [req.user.id]);
-  await notify(s.viewer_id, { type: 'share_approved', title: `${me.full_name} approved your request`, body: `You can see their location for ${label(duration, mins)}.`, data: { shareId: s.id } });
+  await notify(s.viewer_id, { type: 'share_approved', title: `${me.full_name} approved your request`, body: `You can see their location ${forText(duration, mins)}.`, data: { shareId: s.id } });
   emitTo(req.user.id, 'shares:changed', {});
   audit(req, 'share_approve', { shareId: s.id });
   res.json({ share });
